@@ -87,12 +87,12 @@ test.describe('Form Validation', () => {
     test('should trim whitespace from inputs', async ({ page }) => {
       test.fixme(true, 'Bug: Login fails when inputs contain whitespace (leading/trailing)');
       await page.goto('/account/admin-login');
-      const workspaceInput = page.getByPlaceholder('myworkspace');
       const emailInput = page.getByPlaceholder('email@example.com');
+      const passwordInput = page.getByPlaceholder('At least 6 characters');
+
 
       // Fill with whitespace
       await emailInput.fill(`  ${process.env.TEST_USER_EMAIL}  `);
-      const passwordInput = page.getByPlaceholder('At least 6 characters');
       await passwordInput.fill(`  ${process.env.TEST_USER_PASSWORD}  `);
       const signInButton = page.getByRole('button', { name: 'Sign In' });
 
