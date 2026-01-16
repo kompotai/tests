@@ -30,6 +30,7 @@ export class LoginPage extends BasePage {
     this.createCompanyLink = page.getByRole('link', { name: 'Create Company' });
     this.adminLoginLink = page.getByRole('link', { name: 'Admin' });
     this.userTab = page.getByText('User');
+    this.adminTab = page.getByRole('link', { name: 'Admin' });
   }
 
   /**
