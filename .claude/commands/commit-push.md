@@ -1,7 +1,7 @@
 Analyze and commit ALL changes in the test framework project.
 
 ## Project:
-- **Kompot E2E Tests**: `/Users/sh/a/kompot/tests` (Playwright Test Framework)
+- **Kompot E2E Tests**: (Playwright Test Framework)
 
 ---
 
