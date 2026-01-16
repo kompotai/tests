@@ -55,7 +55,6 @@ test.describe('Form Validation', () => {
       const workspaceInput = page.getByPlaceholder('myworkspace');
       const emailInput = page.getByPlaceholder('email@example.com');
       const passwordInput = page.getByPlaceholder('At least 6 characters');
-      const signInButton = page.getByRole('button', { name: 'Sign In' });
 
       // Fill with invalid email format
       await workspaceInput.fill('testworkspace');
