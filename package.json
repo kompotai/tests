@@ -1,0 +1,30 @@
+{
+  "name": "kompot-e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E test framework for Kompot business platform using Playwright",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug",
+    "test:chrome": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "report": "playwright show-report",
+    "codegen": "playwright codegen https://kompot-stage.up.railway.app/"
+  },
+  "keywords": [
+    "playwright",
+    "e2e",
+    "testing",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.5",
+    "dotenv": "^16.4.7",
+    "typescript": "^5.7.3"
+  }
+}
