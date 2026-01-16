@@ -20,11 +20,11 @@ test.describe('Landing Page Navigation', () => {
     await expect(signInLink).toBeVisible();
 
     // Check for Start for Free button
-    const startFreeLink = page.getByRole('link', { name: 'Start for Free' });
+    const startFreeLink = page.getByRole('link', { name: 'Start for Free' }).first();
     await expect(startFreeLink).toBeVisible();
 
     // Check for logo
-    const logo = page.getByAltText('Kompot').first();
+    const logo = page.getByRole('img', { name: 'Kompot' }).first();
     await expect(logo).toBeVisible();
   });
 
@@ -52,7 +52,7 @@ test.describe('Landing Page Navigation', () => {
 
   test('should display pricing section', async ({ page }) => {
     // Look for pricing information
-    const pricingHeading = page.getByRole('heading', { name: /price/i });
+    const pricingHeading = page.getByRole('heading', { name: /price/i }).first();
     await expect(pricingHeading).toBeVisible();
 
     // Check for price display
