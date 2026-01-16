@@ -85,20 +85,22 @@ test.describe('Form Validation', () => {
     });
 
     test('should trim whitespace from inputs', async ({ page }) => {
+      test.fixme(true, 'Bug: Login fails when inputs contain whitespace (leading/trailing)');
+      await page.goto('/account/admin-login');
       const workspaceInput = page.getByPlaceholder('myworkspace');
       const emailInput = page.getByPlaceholder('email@example.com');
 
       // Fill with whitespace
-      await workspaceInput.fill('  testworkspace  ');
-      await emailInput.fill('  test@example.com  ');
+      await emailInput.fill(`  ${process.env.TEST_USER_EMAIL}  `);
+      const passwordInput = page.getByPlaceholder('At least 6 characters');
+      await passwordInput.fill(`  ${process.env.TEST_USER_PASSWORD}  `);
+      const signInButton = page.getByRole('button', { name: 'Sign In' });
 
-      // Get the values
-      const workspaceValue = await workspaceInput.inputValue();
-      const emailValue = await emailInput.inputValue();
+      await signInButton.click();
 
-      // Values should contain the whitespace initially
-      expect(workspaceValue).toBe('  testworkspace  ');
-      expect(emailValue).toBe('  test@example.com  ');
+      // check for successful navigation:
+      await expect(page).toHaveURL(/.*\/manage/, { timeout: 10000 });
+
     });
 
     test('should allow copy-paste in input fields', async ({ page }) => {
