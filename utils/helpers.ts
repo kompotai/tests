@@ -27,7 +27,9 @@ export function generateRandomString(length: number = 10): string {
  * Generate random workspace ID
  */
 export function generateRandomWorkspaceId(): string {
-  return `test-workspace-${generateRandomString(8)}`;
+  const prefix = 'ws';
+  // prefix (2) + random (10) = 12 characters, safe and valid
+  return `${prefix}${generateRandomString(10)}`;
 }
 
 /**
