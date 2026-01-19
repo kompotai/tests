@@ -84,22 +84,26 @@ test.describe('Form Validation', () => {
       expect(page.url()).toContain('/account/login');
     });
 
-    test('should trim whitespace from inputs', async ({ page }) => {
+    test('should show workspace validation error only after clicking Sign In', async ({ page }) => {
       const workspaceInput = page.getByPlaceholder('myworkspace');
       const emailInput = page.getByPlaceholder('email@example.com');
-
-      // Fill with whitespace
-      await workspaceInput.fill('  testworkspace  ');
-      await emailInput.fill('  test@example.com  ');
-
-      // Get the values
-      const workspaceValue = await workspaceInput.inputValue();
-      const emailValue = await emailInput.inputValue();
-
-      // Values should contain the whitespace initially
-      expect(workspaceValue).toBe('  testworkspace  ');
-      expect(emailValue).toBe('  test@example.com  ');
+      const passwordInput = page.getByPlaceholder('At least 6 characters');
+      const signInButton = page.getByRole('button', { name: 'Sign In' });
+      await workspaceInput.fill('  testtest  ');
+      await emailInput.fill('test@example.com');
+      await passwordInput.fill('password123');
+      await signInButton.click();
+      await expect(page.getByText('Only lowercase letters and numbers')).toBeVisible();
     });
+
+    test('should trim whitespace from email input', async ({ page }) => {
+      const emailInput = page.getByPlaceholder('email@example.com');
+      await emailInput.fill('  test@example.com  ');
+      const emailValue = await emailInput.inputValue();
+      expect(emailValue).toBe('test@example.com');
+    });
+
+
 
     test('should allow copy-paste in input fields', async ({ page }) => {
       const emailInput = page.getByPlaceholder('email@example.com');
