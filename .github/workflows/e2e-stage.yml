@@ -1,0 +1,98 @@
+name: E2E Tests (Stage)
+
+on:
+  # Triggered by Railway webhook via GitHub API
+  repository_dispatch:
+    types: [railway-deploy]
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Expected commit SHA (optional)'
+        required: false
+        type: string
+
+jobs:
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Wait for stage to be ready
+        env:
+          STAGE_URL: https://kompot-stage.up.railway.app
+          EXPECTED_VERSION: ${{ github.event.client_payload.commit_sha || inputs.commit_sha || '' }}
+        run: |
+          echo "Checking stage deployment..."
+          MAX_ATTEMPTS=10
+          ATTEMPT=0
+
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS..."
+
+            RESPONSE=$(curl -s "$STAGE_URL/api/health" || echo '{"status":"error"}')
+            echo "Health response: $RESPONSE"
+
+            STATUS=$(echo "$RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+
+            if [ "$STATUS" = "ok" ]; then
+              DEPLOYED_VERSION=$(echo "$RESPONSE" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
+              echo "Stage is healthy! Deployed version: $DEPLOYED_VERSION"
+
+              if [ -n "$EXPECTED_VERSION" ]; then
+                EXPECTED_SHORT="${EXPECTED_VERSION:0:8}"
+                if [ "$DEPLOYED_VERSION" = "$EXPECTED_SHORT" ]; then
+                  echo "Version matches expected!"
+                else
+                  echo "Warning: Version mismatch. Expected: $EXPECTED_SHORT, Got: $DEPLOYED_VERSION"
+                fi
+              fi
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "Stage health check timeout, running tests anyway..."
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+          BASE_URL: https://kompot-stage.up.railway.app
+        run: doppler run --project kompot --config stage -- npx playwright test --project=chromium
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
