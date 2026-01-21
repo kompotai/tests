@@ -1,22 +1,28 @@
 /**
  * Test data constants and generators
+ *
+ * Aligned with kompot.ai/tests/config.ts
  */
 
 export const TestCredentials = {
   get workspaceId(): string {
-    return process.env.WORKSPACE_ID || 'test-workspace';
+    return process.env.TEST_WORKSPACE_ID || 'megatest';
   },
   get email(): string {
-    return process.env.TEST_USER_EMAIL || 'test@example.com';
+    return process.env.WS_MEGATEST_OWNER_EMAIL ||
+           process.env.WS_MEGATEST_EMAIL ||
+           'megatest-owner@kompot.ai';
   },
   get password(): string {
-    return process.env.TEST_USER_PASSWORD || 'password123';
+    return process.env.WS_MEGATEST_OWNER_PASSWORD ||
+           process.env.WS_MEGATEST_PASSWORD ||
+           'MegatestOwner123!';
   },
   get adminEmail(): string {
-    return process.env.ADMIN_EMAIL || 'admin@example.com';
+    return process.env.WS_MEGATEST_ADMIN_EMAIL || 'megatest-admin@kompot.ai';
   },
   get adminPassword(): string {
-    return process.env.ADMIN_PASSWORD || 'admin123';
+    return process.env.WS_MEGATEST_ADMIN_PASSWORD || 'MegatestAdmin123!';
   },
 };
 
@@ -24,18 +30,18 @@ export const InvalidCredentials = {
   workspaceId: 'invalid-workspace-id-123',
   email: 'nonexistent@example.com',
   password: 'wrongpassword123',
-  shortPassword: '12345', // Less than 6 characters
+  shortPassword: '12345',
   invalidEmail: 'not-an-email',
 };
 
 export const TestUrls = {
   get base(): string {
-    return process.env.BASE_URL || 'https://kompot-stage.up.railway.app';
+    return process.env.PLAYWRIGHT_BASE_URL || 'https://kompot-stage.up.railway.app';
   },
-  login: '/account/login',
-  register: '/account/register',
-  adminLogin: '/account/admin-login',
-  forgotPassword: '/account/forgot-password',
+  login: '/login',
+  register: '/register',
+  adminLogin: '/admin-login',
+  forgotPassword: '/forgot-password',
   home: '/',
 };
 
@@ -46,9 +52,6 @@ export const Timeouts = {
   navigation: 15000,
 };
 
-/**
- * Common test user data
- */
 export const TestUsers = {
   validUser: {
     workspaceId: TestCredentials.workspaceId,
