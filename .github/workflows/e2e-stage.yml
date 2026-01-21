@@ -1,7 +1,11 @@
 name: E2E Tests (Stage)
 
 on:
-  # Triggered by Railway webhook via GitHub API
+  # When tests are updated
+  push:
+    branches: [main]
+
+  # Triggered by kompot.ai deploy
   repository_dispatch:
     types: [railway-deploy]
 
