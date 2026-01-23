@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "description": "E2E test framework for Kompot business platform using Playwright",
   "scripts": {
-    "test": "playwright test",
-    "test:headed": "playwright test --headed",
-    "test:ui": "playwright test --ui",
-    "test:debug": "playwright test --debug",
-    "test:chrome": "playwright test --project=chromium",
-    "test:firefox": "playwright test --project=firefox",
-    "test:webkit": "playwright test --project=webkit",
-    "report": "playwright show-report",
-    "codegen": "playwright codegen https://kompot-stage.up.railway.app/"
+    "test": "doppler run -- playwright test",
+    "test:headed": "doppler run -- playwright test --headed",
+    "test:ui": "doppler run -- playwright test --ui",
+    "test:debug": "doppler run -- playwright test --debug",
+    "test:chrome": "doppler run -- playwright test --project=chromium",
+    "test:firefox": "doppler run -- playwright test --project=firefox",
+    "test:webkit": "doppler run -- playwright test --project=webkit",
+    "report": "doppler run -- playwright show-report",
+    "codegen": "doppler run -- playwright codegen https://kompot-stage.up.railway.app/"
   },
   "keywords": [
     "playwright",
