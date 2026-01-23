@@ -5,6 +5,7 @@
  * Extends Playwright with TestWorld instance.
  */
 
+import 'dotenv/config';
 import { test as base, Page, BrowserContext, APIRequestContext } from '@playwright/test';
 import { TestCredentials, TestUrls } from '@utils/test-data';
 
