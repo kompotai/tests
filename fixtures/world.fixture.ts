@@ -50,6 +50,8 @@ export class TestWorld {
     // Wait for form to be ready
     await this.page.waitForSelector('form');
 
+    await this.dismissOverlays();
+
     // Fill in the credentials
     await this.page.fill('[data-testid="login-input-wsid"]', workspaceId);
     await this.page.fill('[data-testid="login-input-email"]', email);
@@ -59,8 +61,8 @@ export class TestWorld {
     await this.page.click('[data-testid="login-button-submit"]');
 
     // Wait for URL to change from /login
-    await this.page.waitForFunction(
-      () => !window.location.pathname.includes('/login'),
+    await this.page.waitForURL(
+      url => !url.pathname.includes('/login'),
       { timeout: 20000 }
     );
 
