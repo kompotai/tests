@@ -3,11 +3,10 @@
  */
 
 import { Page, BrowserContext } from '@playwright/test';
-import { User, SystemRole } from '@fixtures/users';
+import { User, SystemRole, WORKSPACE_ID } from '@fixtures/users';
 import * as path from 'path';
 
 const AUTH_DIR = path.join(__dirname, '../../../.auth');
-const WORKSPACE_ID = process.env.WS_MEGATEST_ID || 'megatest';
 
 export { AUTH_DIR, WORKSPACE_ID };
 

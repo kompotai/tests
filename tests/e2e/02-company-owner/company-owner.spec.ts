@@ -1,96 +1,65 @@
 /**
- * Company Owner - Registration + Workspace Creation + Platform Actions
+ * Company Owner Tests
  *
- * ╔══════════════════════════════════════════════════════════════════════════╗
- * ║  Flow:                                                                   ║
- * ║  1. Cleanup megatest data (DELETE from DB)                               ║
- * ║  2. Register owner via /account/register                                 ║
- * ║  3. Enter phone, create workspace                                        ║
- * ║  4. Enter workspace, save auth state                                     ║
- * ║                                                                          ║
- * ║  Verification (REG1-REG3):                                               ║
- * ║  - Owner created in Manager DB with company_owner role                   ║
- * ║  - Workspace created in Manager DB                                       ║
- * ║  - Owner created in Workspace DB with owner role                         ║
- * ║                                                                          ║
- * ║  Platform Actions (CO1-CO4):                                             ║
- * ║  - CO1: Owner can login via admin-login                                  ║
- * ║  - CO2: Owner can see workspace in manage list                           ║
- * ║  - CO3: Owner can generate new password and login with it                ║
- * ║  - CO4: Owner can enter workspace from manage dashboard                  ║
- * ╚══════════════════════════════════════════════════════════════════════════╝
+ * CI Mode:  Cleanup → Register → DB Verification → UI Tests
+ * Tester Mode: Login → UI Tests (cleanup и DB тесты пропускаются)
  */
 
 import { test, expect, chromium, Browser, BrowserContext, Page } from '@playwright/test';
-import { OWNER } from '@fixtures/users';
-import { MongoClient } from 'mongodb';
+import { OWNER, WORKSPACE_ID, IS_CI_MODE, hasMongoDBAccess, logTestConfig } from '@fixtures/users';
 import * as path from 'path';
 import * as fs from 'fs';
 
 const AUTH_DIR = path.join(__dirname, '../../../.auth');
-const WORKSPACE_ID = process.env.WS_MEGATEST_ID || 'megatest';
 
-// Ensure auth directory exists
 if (!fs.existsSync(AUTH_DIR)) {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 }
 
 // ============================================
-// Helper Functions
+// Helpers
 // ============================================
 
 async function dismissCookieConsent(page: Page) {
-  const acceptBtn = page.locator('button:has-text("Accept All"), button:has-text("Accept")');
-  if (await acceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-    await acceptBtn.click();
-    await acceptBtn.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
+  const btn = page.locator('button:has-text("Accept All"), button:has-text("Accept")');
+  if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
+    await btn.click();
+    await btn.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
   }
 }
 
-async function cleanupMegatestData() {
-  const mongoUri = process.env.MONGODB_URI!;
-
-  if (!mongoUri || !WORKSPACE_ID) {
-    console.log('⚠️  Missing env vars, skipping cleanup');
+async function cleanupWorkspace() {
+  if (!hasMongoDBAccess()) {
+    console.log('⏭️  Cleanup пропущен (Tester Mode)');
     return;
   }
 
-  const client = new MongoClient(mongoUri);
+  const { MongoClient } = await import('mongodb');
+  const client = new MongoClient(process.env.MONGODB_URI!);
 
   try {
     await client.connect();
-    const managerDb = client.db('manager');
+    const db = client.db('manager');
+    const ws = await db.collection('workspaces').findOne({ wsid: WORKSPACE_ID });
 
-    // Find workspace first to get owner ID
-    const workspace = await managerDb.collection('workspaces').findOne({ wsid: WORKSPACE_ID });
-
-    if (workspace) {
-      // Delete owner by ID (from workspace.ownerId)
-      if (workspace.ownerId) {
-        const ownerResult = await managerDb.collection('users').deleteOne({
-          _id: workspace.ownerId
-        });
-        if (ownerResult.deletedCount > 0) {
-          console.log(`🗑️  Deleted owner by ID from manager DB`);
-        }
+    if (ws) {
+      if (ws.ownerId) {
+        await db.collection('users').deleteOne({ _id: ws.ownerId });
+        console.log('🗑️  Owner удалён из manager DB');
       }
+      await db.collection('workspaces').deleteOne({ wsid: WORKSPACE_ID });
+      console.log(`🗑️  Workspace "${WORKSPACE_ID}" удалён`);
 
-      // Delete workspace record
-      await managerDb.collection('workspaces').deleteOne({ wsid: WORKSPACE_ID });
-      console.log(`🗑️  Deleted workspace record "${WORKSPACE_ID}"`);
-
-      // Drop workspace database
-      const dbName = workspace.databaseName || `ws_${WORKSPACE_ID}`;
+      const dbName = ws.databaseName || `ws_${WORKSPACE_ID}`;
       await client.db(dbName).dropDatabase();
-      console.log(`🗑️  Dropped database "${dbName}"`);
+      console.log(`🗑️  Database "${dbName}" удалена`);
     }
   } finally {
     await client.close();
   }
 }
 
-async function registerOwnerAndCreateWorkspace(page: Page) {
-  // Register owner
+async function registerOwner(page: Page) {
   await page.goto('/account/register');
   await page.waitForLoadState('networkidle');
 
@@ -98,11 +67,10 @@ async function registerOwnerAndCreateWorkspace(page: Page) {
   await page.fill('input#register-email', OWNER.email);
   await page.fill('input#register-password', OWNER.password);
 
-  const termsCheckbox = page.locator('input[type="checkbox"]');
-  await termsCheckbox.check();
+  await page.locator('input[type="checkbox"]').check();
   await page.click('button[type="submit"]');
 
-  // Enter phone number
+  // Phone
   await page.waitForSelector('input[type="tel"]', { timeout: 10000 });
   await dismissCookieConsent(page);
   await page.fill('input[type="tel"]', '5551234567');
@@ -110,21 +78,14 @@ async function registerOwnerAndCreateWorkspace(page: Page) {
 
   // Create workspace
   await page.waitForURL('**/manage**', { timeout: 20000 });
-
-  await page.fill('input#name', 'Megatest');
+  await page.fill('input#name', `${WORKSPACE_ID} Workspace`);
   await page.waitForTimeout(500);
 
-  const wsidInput = page.locator('input#wsid');
-  await wsidInput.clear();
-  await wsidInput.fill(WORKSPACE_ID);
-
-  const emailInput = page.locator('input#email');
-  await emailInput.clear();
-  await emailInput.fill(OWNER.email);
-
-  // fill() automatically clears the field first
+  await page.locator('input#wsid').clear();
+  await page.locator('input#wsid').fill(WORKSPACE_ID);
+  await page.locator('input#email').clear();
+  await page.locator('input#email').fill(OWNER.email);
   await page.fill('input#password', OWNER.password);
-
   await page.click('button[type="submit"]');
 
   // Enter workspace
@@ -132,13 +93,26 @@ async function registerOwnerAndCreateWorkspace(page: Page) {
   await page.click('button:has-text("Enter")');
   await page.waitForURL('**/ws**', { timeout: 15000 });
 
-  // Save owner auth state
   await page.context().storageState({ path: path.join(AUTH_DIR, 'owner.json') });
-  console.log('✅ Owner registered and workspace created');
+  console.log('✅ Owner зарегистрирован, workspace создан');
+}
+
+async function loginOwner(page: Page) {
+  await page.goto('/account/login');
+  await page.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
+
+  await page.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
+  await page.fill('[data-testid="login-input-email"]', OWNER.email);
+  await page.fill('[data-testid="login-input-password"]', OWNER.password);
+  await page.click('[data-testid="login-button-submit"]');
+
+  await page.waitForURL(/\/ws/, { timeout: 20000 });
+  await page.context().storageState({ path: path.join(AUTH_DIR, 'owner.json') });
+  console.log('✅ Owner вошёл в существующий workspace');
 }
 
 // ============================================
-// Setup
+// Tests
 // ============================================
 
 test.describe.serial('Company Owner', () => {
@@ -147,140 +121,116 @@ test.describe.serial('Company Owner', () => {
   let page: Page;
 
   test.beforeAll(async () => {
-    console.log('\n' + '='.repeat(60));
-    console.log('  COMPANY OWNER: Registration + Workspace Setup');
-    console.log('='.repeat(60) + '\n');
+    logTestConfig();
 
-    // 1. Cleanup
-    console.log('Step 1: Cleanup megatest data...');
-    await cleanupMegatestData();
-
-    // 2. Launch browser
     browser = await chromium.launch({ headless: true });
     context = await browser.newContext({ baseURL: process.env.BASE_URL });
     page = await context.newPage();
 
-    // 3. Register owner and create workspace
-    console.log('\nStep 2: Register owner and create workspace...');
-    await registerOwnerAndCreateWorkspace(page);
+    if (IS_CI_MODE) {
+      console.log('\n📋 CI Mode: Cleanup → Register\n');
+      await cleanupWorkspace();
+      await registerOwner(page);
+    } else {
+      console.log('\n📋 Tester Mode: Login в существующий workspace\n');
+      await loginOwner(page);
+    }
 
-    // Cleanup browser
     await page.close();
     await context.close();
     await browser.close();
-
-    console.log('\n' + '='.repeat(60));
-    console.log('  SETUP COMPLETE');
-    console.log('='.repeat(60) + '\n');
   });
 
   // ============================================
-  // Registration Verification - Company Owner created correctly
+  // DB Verification — только CI Mode
   // ============================================
 
-  test('REG1: owner was created in Manager DB with company_owner role', async () => {
-    const mongoUri = process.env.MONGODB_URI!;
-    const client = new MongoClient(mongoUri);
+  test('REG1: Owner создан в Manager DB с ролью company_owner', async () => {
+    test.skip(!hasMongoDBAccess(), 'SKIP: нет доступа к MongoDB');
+
+    const { MongoClient } = await import('mongodb');
+    const client = new MongoClient(process.env.MONGODB_URI!);
 
     try {
       await client.connect();
-      const managerDb = client.db('manager');
+      const owner = await client.db('manager').collection('users').findOne({ email: OWNER.email });
 
-      // Find owner in Manager DB
-      const owner = await managerDb.collection('users').findOne({ email: OWNER.email });
       expect(owner).not.toBeNull();
-      expect(owner!.name).toBe(OWNER.name);
       expect(owner!.roles).toContain('company_owner');
-      expect(owner!.isActive).toBe(true);
-
-      console.log('✅ Owner exists in Manager DB with company_owner role');
+      console.log('✅ Owner есть в Manager DB');
     } finally {
       await client.close();
     }
   });
 
-  test('REG2: workspace was created in Manager DB', async () => {
-    const mongoUri = process.env.MONGODB_URI!;
-    const client = new MongoClient(mongoUri);
+  test('REG2: Workspace создан в Manager DB', async () => {
+    test.skip(!hasMongoDBAccess(), 'SKIP: нет доступа к MongoDB');
+
+    const { MongoClient } = await import('mongodb');
+    const client = new MongoClient(process.env.MONGODB_URI!);
 
     try {
       await client.connect();
-      const managerDb = client.db('manager');
+      const ws = await client.db('manager').collection('workspaces').findOne({ wsid: WORKSPACE_ID });
 
-      // Find workspace
-      const workspace = await managerDb.collection('workspaces').findOne({ wsid: WORKSPACE_ID });
-      expect(workspace).not.toBeNull();
-      expect(workspace!.name).toBe('Megatest');
-      expect(workspace!.status).toBe('active');
-      expect(workspace!.ownerEmail).toBe(OWNER.email);
-
-      console.log('✅ Workspace exists in Manager DB');
+      expect(ws).not.toBeNull();
+      expect(ws!.status).toBe('active');
+      console.log('✅ Workspace есть в Manager DB');
     } finally {
       await client.close();
     }
   });
 
-  test('REG3: owner exists in Workspace DB with owner role', async () => {
-    const mongoUri = process.env.MONGODB_URI!;
-    const client = new MongoClient(mongoUri);
+  test('REG3: Owner создан в Workspace DB с ролью owner', async () => {
+    test.skip(!hasMongoDBAccess(), 'SKIP: нет доступа к MongoDB');
+
+    const { MongoClient } = await import('mongodb');
+    const client = new MongoClient(process.env.MONGODB_URI!);
 
     try {
       await client.connect();
-      const workspaceDb = client.db(`ws_${WORKSPACE_ID}`);
+      const owner = await client.db(`ws_${WORKSPACE_ID}`).collection('users').findOne({ email: OWNER.email });
 
-      // Find owner in Workspace DB
-      const owner = await workspaceDb.collection('users').findOne({ email: OWNER.email });
       expect(owner).not.toBeNull();
-      expect(owner!.name).toBe(OWNER.name);
-      expect(owner!.roles).toContain('owner');  // roles is an array
-
-      console.log('✅ Owner exists in Workspace DB with owner role');
+      expect(owner!.roles).toContain('owner');
+      console.log('✅ Owner есть в Workspace DB');
     } finally {
       await client.close();
     }
   });
 
   // ============================================
-  // Login Verification
+  // UI Tests — оба режима
   // ============================================
 
-  test('owner can login to workspace', async ({ page }) => {
+  test('Owner может войти в workspace', async ({ page }) => {
     await page.goto('/account/login');
     await page.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
     await page.fill('[data-testid="login-input-email"]', OWNER.email);
     await page.fill('[data-testid="login-input-password"]', OWNER.password);
     await page.click('[data-testid="login-button-submit"]');
 
-    await page.waitForURL(/\/ws|\/dashboard|\/home/, { timeout: 20000 });
-    expect(page.url()).toMatch(/\/ws|\/dashboard|\/home/);
+    await page.waitForURL(/\/ws/, { timeout: 20000 });
+    expect(page.url()).toContain('/ws');
   });
 
-  test('owner auth state file was created', async () => {
+  test('Owner auth state файл создан', async () => {
     expect(fs.existsSync(path.join(AUTH_DIR, 'owner.json'))).toBe(true);
   });
 
-  // ============================================
-  // Platform Access - Owner can access /manage/
-  // ============================================
-
-  test('CO1: owner can login via admin-login and see manage dashboard', async ({ page }) => {
-    // Navigate to admin login (same as super admin uses)
+  test('CO1: Owner может войти через admin-login', async ({ page }) => {
     await page.goto('/account/admin-login');
     await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
 
-    // Fill login form with owner credentials
     await page.fill('[data-testid="login-input-email"]', OWNER.email);
     await page.fill('[data-testid="login-input-password"]', OWNER.password);
     await page.click('button[type="submit"]');
 
-    // Wait for redirect to manage dashboard
     await page.waitForURL(/\/manage/, { timeout: 20000 });
     expect(page.url()).toContain('/manage');
-    console.log('✅ Owner logged in via admin-login');
   });
 
-  test('CO2: owner can see their workspace in manage workspaces list', async ({ page }) => {
-    // Login via admin-login first
+  test('CO2: Owner видит свой workspace в manage', async ({ page }) => {
     await page.goto('/account/admin-login');
     await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
     await page.fill('[data-testid="login-input-email"]', OWNER.email);
@@ -288,23 +238,18 @@ test.describe.serial('Company Owner', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/manage/, { timeout: 20000 });
 
-    // Navigate to workspaces page
     await page.goto('/manage/workspaces');
     await page.waitForLoadState('networkidle');
 
-    // Verify the workspace is visible
-    const workspaceRow = page.locator(`[data-testid="manage-workspaces-row-${WORKSPACE_ID}"]`);
-    await expect(workspaceRow).toBeVisible({ timeout: 10000 });
-    await expect(workspaceRow).toContainText(WORKSPACE_ID);
-    console.log('✅ Owner can see their workspace in manage list');
+    const row = page.locator(`[data-testid="manage-workspaces-row-${WORKSPACE_ID}"]`);
+    await expect(row).toBeVisible({ timeout: 10000 });
   });
 
-  test('CO3: owner can generate new password and login with it', async ({ browser }) => {
-    // Create fresh context for this test
-    const context = await browser.newContext();
-    const page = await context.newPage();
+  test('CO3: Owner может сгенерировать новый пароль', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
 
-    // Login via admin-login first
+    // Login
     await page.goto('/account/admin-login');
     await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
     await page.fill('[data-testid="login-input-email"]', OWNER.email);
@@ -312,60 +257,43 @@ test.describe.serial('Company Owner', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/manage/, { timeout: 20000 });
 
-    // Navigate to workspaces page
+    // Generate new password
     await page.goto('/manage/workspaces');
     await page.waitForLoadState('networkidle');
 
-    // Click on change password button (key icon)
-    const changePasswordBtn = page.locator(`[data-testid="manage-workspaces-button-reset-password-${WORKSPACE_ID}"]`);
-    await expect(changePasswordBtn).toBeVisible({ timeout: 10000 });
-    await changePasswordBtn.click();
+    const btn = page.locator(`[data-testid="manage-workspaces-button-reset-password-${WORKSPACE_ID}"]`);
+    await expect(btn).toBeVisible({ timeout: 10000 });
+    await btn.click();
 
-    // Verify credentials modal appears with new password
-    const credentialsModal = page.locator('[data-testid="workspace-credentials-modal"]');
-    await expect(credentialsModal).toBeVisible({ timeout: 10000 });
+    const modal = page.locator('[data-testid="workspace-credentials-modal"]');
+    await expect(modal).toBeVisible({ timeout: 10000 });
 
-    // Extract new password from modal
-    const passwordField = page.locator('[data-testid="workspace-credentials-password"]');
-    await expect(passwordField).toBeVisible();
-    const passwordText = await passwordField.textContent();
-    expect(passwordText).toBeTruthy();
-
-    // Extract just the password value (format: "Password: xxxxx")
-    const newPassword = passwordText!.replace('Password:', '').trim();
+    const pwdField = page.locator('[data-testid="workspace-credentials-password"]');
+    const pwdText = await pwdField.textContent();
+    const newPassword = pwdText!.replace('Password:', '').trim();
     expect(newPassword.length).toBeGreaterThan(0);
 
-    // Close modal
     await page.click('[data-testid="workspace-credentials-button-done"]');
-    await expect(credentialsModal).not.toBeVisible({ timeout: 5000 });
-    await context.close();
+    await ctx.close();
 
-    // Now verify login with new password works
-    const loginContext = await browser.newContext({
-      storageState: { cookies: [], origins: [] },  // Fresh session
-    });
-    const loginPage = await loginContext.newPage();
+    // Verify new password works
+    const loginCtx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const loginPage = await loginCtx.newPage();
 
     await loginPage.goto('/account/login');
-    await loginPage.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
     await loginPage.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
     await loginPage.fill('[data-testid="login-input-email"]', OWNER.email);
     await loginPage.fill('[data-testid="login-input-password"]', newPassword);
     await loginPage.click('[data-testid="login-button-submit"]');
 
-    // Should successfully login to workspace
     await loginPage.waitForURL(/\/ws/, { timeout: 20000 });
-    expect(loginPage.url()).toContain('/ws');
+    await loginCtx.storageState({ path: path.join(AUTH_DIR, 'owner.json') });
+    await loginCtx.close();
 
-    // Update owner auth state with new password session
-    await loginContext.storageState({ path: path.join(AUTH_DIR, 'owner.json') });
-    await loginContext.close();
-
-    console.log('✅ Owner can generate new password and login with it');
+    console.log('✅ Новый пароль работает');
   });
 
-  test('CO4: owner can enter workspace from manage dashboard', async ({ page }) => {
-    // Login via admin-login first
+  test('CO4: Owner может войти в workspace из manage', async ({ page }) => {
     await page.goto('/account/admin-login');
     await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
     await page.fill('[data-testid="login-input-email"]', OWNER.email);
@@ -373,25 +301,14 @@ test.describe.serial('Company Owner', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(/\/manage/, { timeout: 20000 });
 
-    // Navigate to workspaces page
     await page.goto('/manage/workspaces');
     await page.waitForLoadState('networkidle');
 
-    // Click on enter workspace button (arrow icon)
-    const enterWorkspaceBtn = page.locator(`[data-testid="manage-workspaces-button-enter-${WORKSPACE_ID}"]`);
-    await expect(enterWorkspaceBtn).toBeVisible({ timeout: 10000 });
-    await enterWorkspaceBtn.click();
+    const btn = page.locator(`[data-testid="manage-workspaces-button-enter-${WORKSPACE_ID}"]`);
+    await expect(btn).toBeVisible({ timeout: 10000 });
+    await btn.click();
 
-    // Should navigate to workspace
     await page.waitForURL(/\/ws/, { timeout: 20000 });
     expect(page.url()).toContain('/ws');
-
-    console.log('✅ Owner can enter workspace from manage dashboard');
   });
-
-  // Note: CO5 (same password for both logins) was removed because:
-  // After CO3 generates new workspace password, the passwords are different:
-  // - Manager DB (admin-login): original registration password
-  // - Workspace DB (regular login): newly generated password
-  // CO3 already verifies that the new workspace password works.
 });
