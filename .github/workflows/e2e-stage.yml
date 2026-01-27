@@ -83,7 +83,8 @@ jobs:
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
           BASE_URL: https://kompot-stage.up.railway.app
-        run: doppler run --project kompot --config stage -- npx playwright test --project=chromium
+        # Runs all projects in sequence: super-admin → company-owner → workspace-users
+        run: doppler run --project kompot --config stage -- npx playwright test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
