@@ -1,13 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
-// Load environment variables from .env file
-dotenv.config();
+// Load .env and OVERRIDE existing shell env vars
+dotenv.config({ override: true });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
+  globalSetup: './global-setup.ts',
   testDir: './tests',
 
   // Maximum time one test can run for
@@ -29,8 +30,8 @@ export default defineConfig({
 
   // Shared settings for all projects
   use: {
-    // Base URL for all tests
-    baseURL: process.env.BASE_URL || 'https://kompot-stage.up.railway.app',
+    // Base URL for all tests (required)
+    baseURL: process.env.BASE_URL,
 
     // Viewport size to support Tailwind 2xl breakpoint (≥1536px)
     viewport: { width: 1920, height: 1080 },
@@ -51,41 +52,34 @@ export default defineConfig({
     navigationTimeout: 15 * 1000,
   },
 
-  // Configure projects for major browsers
+  // Configure projects - sequential flow
   projects: [
+    // 01: Super admin login (platform bootstrap)
     {
-      name: 'chromium',
-      use: { 
+      name: 'super-admin',
+      testDir: './tests/e2e/01-super-admin',
+      fullyParallel: false,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // 02: Company Owner - registration + workspace creation + platform actions
+    {
+      name: 'company-owner',
+      testDir: './tests/e2e/02-company-owner',
+      dependencies: ['super-admin'],
+      fullyParallel: false,  // Sequential - uses test.describe.serial
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // 03: Workspace Users - owner creates users + users verify login
+    {
+      name: 'workspace-users',
+      testDir: './tests/e2e/03-workspace-users',
+      dependencies: ['company-owner'],
+      fullyParallel: false,  // Sequential - create users first, then verify
+      use: {
         ...devices['Desktop Chrome'],
-        viewport: { width: 1920, height: 1080 },
+        storageState: '.auth/owner.json',
       },
     },
-
-    {
-      name: 'firefox',
-      use: { 
-        ...devices['Desktop Firefox'],
-        viewport: { width: 1920, height: 1080 },
-      },
-    },
-
-    {
-      name: 'webkit',
-      use: { 
-        ...devices['Desktop Safari'],
-        viewport: { width: 1920, height: 1080 },
-      },
-    },
-
-    // Mobile viewports
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
   ],
 
   // Run your local dev server before starting the tests
