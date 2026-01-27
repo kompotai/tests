@@ -40,13 +40,16 @@ async function cleanupWorkspace() {
   try {
     await client.connect();
     const db = client.db('manager');
-    const ws = await db.collection('workspaces').findOne({ wsid: WORKSPACE_ID });
 
+    // 1. Удаляем owner по email (на случай orphan)
+    const ownerDeleted = await db.collection('users').deleteOne({ email: OWNER.email });
+    if (ownerDeleted.deletedCount > 0) {
+      console.log('🗑️  Owner удалён из manager DB (по email)');
+    }
+
+    // 2. Удаляем workspace и его базу
+    const ws = await db.collection('workspaces').findOne({ wsid: WORKSPACE_ID });
     if (ws) {
-      if (ws.ownerId) {
-        await db.collection('users').deleteOne({ _id: ws.ownerId });
-        console.log('🗑️  Owner удалён из manager DB');
-      }
       await db.collection('workspaces').deleteOne({ wsid: WORKSPACE_ID });
       console.log(`🗑️  Workspace "${WORKSPACE_ID}" удалён`);
 
