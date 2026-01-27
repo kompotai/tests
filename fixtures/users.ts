@@ -1,14 +1,16 @@
 /**
  * Test Users Configuration
  *
- * Все credentials генерируются из WS_ID:
- * - Email: {WS_ID}-{role}@kompot.ai
- * - Password: {WS_ID}{Role}123!
- * - Name: {WS_ID} {Role}
+ * Два режима работы:
  *
- * Два режима:
- * 1. CI Mode (есть MONGODB_URI): полный тест-сьют с cleanup
- * 2. Tester Mode (нет MONGODB_URI): только UI тесты
+ * 1. CI Mode (есть MONGODB_URI):
+ *    - Полный тест-сьют с cleanup и DB verification
+ *    - Credentials генерируются из WS_ID
+ *
+ * 2. Tester Mode (нет MONGODB_URI):
+ *    - Только UI тесты
+ *    - Credentials берутся из WS_OWNER_EMAIL / WS_OWNER_PASSWORD
+ *    - Workspace должен быть создан вручную
  */
 
 export type SystemRole = 'admin' | 'manager' | 'technician' | 'accountant';
@@ -62,7 +64,9 @@ export const SUPER_ADMIN = {
 };
 
 // ============================================
-// Owner — генерируется из WS_ID
+// Owner
+// - CI Mode: генерируется из WS_ID
+// - Tester Mode: из WS_OWNER_EMAIL / WS_OWNER_PASSWORD
 // ============================================
 
 export const OWNER = {
@@ -71,9 +75,19 @@ export const OWNER = {
     return `${WORKSPACE_ID} Owner`;
   },
   get email(): string {
+    // Tester Mode: из env var
+    if (IS_TESTER_MODE && process.env.WS_OWNER_EMAIL) {
+      return process.env.WS_OWNER_EMAIL;
+    }
+    // CI Mode: генерация из WS_ID
     return `${WORKSPACE_ID}-owner@kompot.ai`;
   },
   get password(): string {
+    // Tester Mode: из env var
+    if (IS_TESTER_MODE && process.env.WS_OWNER_PASSWORD) {
+      return process.env.WS_OWNER_PASSWORD;
+    }
+    // CI Mode: генерация из WS_ID
     return `${WORKSPACE_ID}Owner123!`;
   },
 };
@@ -136,11 +150,13 @@ export function logTestConfig(): void {
   console.log(`  Mode: ${IS_CI_MODE ? '🔧 CI' : '👤 Tester'}`);
   console.log('─'.repeat(60));
   console.log(`  Owner email: ${OWNER.email}`);
-  console.log(`  Owner password: ${OWNER.password}`);
   if (IS_CI_MODE) {
+    console.log(`  Owner password: ${OWNER.password}`);
     console.log('─'.repeat(60));
     console.log(`  MongoDB: ✅ Available`);
     console.log(`  Super Admin: ${HAS_SUPER_ADMIN ? '✅ Available' : '❌ Not set'}`);
+  } else {
+    console.log(`  Owner password: ${'*'.repeat(8)} (from env)`);
   }
   console.log('═'.repeat(60) + '\n');
 }

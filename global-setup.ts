@@ -20,6 +20,7 @@ export default async function globalSetup() {
   const baseUrl = process.env.BASE_URL;
   const hasMongoDB = Boolean(process.env.MONGODB_URI);
   const hasSuperAdmin = Boolean(process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD);
+  const isTesterMode = !hasMongoDB;
 
   // Валидация обязательных переменных
   if (!baseUrl) {
@@ -29,16 +30,33 @@ export default async function globalSetup() {
     process.exit(1);
   }
 
-  if (!process.env.WS_ID && !hasMongoDB) {
+  if (!process.env.WS_ID) {
     console.error('❌ WS_ID не задан!\n');
-    console.error('Для тестировщиков добавьте в .env:');
+    console.error('Добавьте в .env:');
     console.error('  WS_ID=ваш-workspace-id\n');
     process.exit(1);
   }
 
-  // Генерируем credentials для отображения
-  const ownerEmail = `${wsId}-owner@kompot.ai`;
-  const ownerPassword = `${wsId}Owner123!`;
+  // Tester Mode: проверяем WS_OWNER_EMAIL и WS_OWNER_PASSWORD
+  if (isTesterMode) {
+    if (!process.env.WS_OWNER_EMAIL || !process.env.WS_OWNER_PASSWORD) {
+      console.error('❌ WS_OWNER_EMAIL и WS_OWNER_PASSWORD не заданы!\n');
+      console.error('Для тестировщиков:');
+      console.error('  1. Зарегистрируйте workspace на Stage');
+      console.error('  2. Добавьте в .env:');
+      console.error('     WS_OWNER_EMAIL=ваш-email@example.com');
+      console.error('     WS_OWNER_PASSWORD=ваш-пароль\n');
+      process.exit(1);
+    }
+  }
+
+  // Credentials для отображения
+  const ownerEmail = isTesterMode
+    ? process.env.WS_OWNER_EMAIL!
+    : `${wsId}-owner@kompot.ai`;
+  const ownerPassword = isTesterMode
+    ? process.env.WS_OWNER_PASSWORD!
+    : `${wsId}Owner123!`;
 
   // Вывод конфигурации
   console.log('═'.repeat(60));
@@ -64,9 +82,9 @@ export default async function globalSetup() {
     console.log(`  BASE_URL:     ${baseUrl}`);
     console.log(`  WS_ID:        ${wsId}`);
     console.log('─'.repeat(60));
-    console.log('  Credentials (сгенерированы из WS_ID):');
+    console.log('  Credentials (из env vars):');
     console.log(`    Email:      ${ownerEmail}`);
-    console.log(`    Password:   ${ownerPassword}`);
+    console.log(`    Password:   ${'*'.repeat(8)}`);
     console.log('─'.repeat(60));
     console.log('  Тесты:');
     console.log('    ⏭️  Super Admin — SKIP (нет SUPER_ADMIN_*)');
@@ -74,8 +92,6 @@ export default async function globalSetup() {
     console.log('    ⏭️  DB Verification — SKIP (нет MONGODB_URI)');
     console.log('    ✅ Login в существующий workspace');
     console.log('    ✅ UI Tests (CO1-CO4)');
-    console.log('─'.repeat(60));
-    console.log('  ⚠️  Убедитесь, что workspace уже создан с этими credentials!');
   }
 
   console.log('═'.repeat(60) + '\n');

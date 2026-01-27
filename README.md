@@ -2,20 +2,13 @@
 
 ## Для тестировщиков
 
-### Шаг 1: Создайте workspace на Stage (один раз)
+### Шаг 1: Создайте workspace на Stage
 
-Откройте https://kompot-stage.up.railway.app/account/register
+Откройте https://kompot-stage.up.railway.app/account/register и зарегистрируйтесь.
 
-Придумайте свой **Workspace ID** (например: `tester-ivan`) и используйте его для регистрации:
-
-| Поле | Значение | Пример |
-|------|----------|--------|
-| Name | Любое | Ivan Tester |
-| Email | `{WS_ID}-owner@kompot.ai` | `tester-ivan-owner@kompot.ai` |
-| Password | `{WS_ID}Owner123!` | `tester-ivanOwner123!` |
-| Workspace ID | Ваш WS_ID | `tester-ivan` |
-
-> **Важно:** Используйте именно этот формат email и пароля — тесты генерируют их автоматически из Workspace ID.
+При регистрации:
+- Придумайте **Workspace ID** (например: `tester-ivan`)
+- Используйте любой email и пароль
 
 ### Шаг 2: Настройте окружение
 
@@ -31,6 +24,8 @@ npx playwright install chromium
 ```env
 BASE_URL=https://kompot-stage.up.railway.app
 WS_ID=tester-ivan
+WS_OWNER_EMAIL=your-email@example.com
+WS_OWNER_PASSWORD=your-password
 ```
 
 ### Шаг 3: Запустите тесты
@@ -38,16 +33,6 @@ WS_ID=tester-ivan
 ```bash
 npm test
 ```
-
-### Что произойдёт
-
-При запуске тесты:
-1. Проверят наличие `WS_ID` в `.env`
-2. Сгенерируют credentials: `{WS_ID}-owner@kompot.ai` / `{WS_ID}Owner123!`
-3. Войдут в ваш существующий workspace
-4. Выполнят UI тесты
-
-Если workspace не существует или credentials неверные — тесты упадут на этапе логина.
 
 ---
 
@@ -80,7 +65,7 @@ npm test
 
 **Тест падает на логине**
 - Workspace не создан на Stage
-- Email или пароль не соответствуют формату `{WS_ID}-owner@kompot.ai` / `{WS_ID}Owner123!`
+- Email или пароль в `.env` не совпадают с данными при регистрации
 
-**Ошибка "WS_ID не задан"**
-- Создайте файл `.env` с `WS_ID=ваш-workspace-id`
+**Ошибка "WS_OWNER_EMAIL и WS_OWNER_PASSWORD не заданы"**
+- Добавьте в `.env` ваши реальные credentials
