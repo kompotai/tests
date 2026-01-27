@@ -34,4 +34,4 @@ Acceptance Criteria
  
 - [ ] AC4: Validation errors shown for invalid data
  
- AC5: Created task appears in list
+- [ ] AC5: Created task appears in list
