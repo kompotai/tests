@@ -24,6 +24,7 @@ export abstract class BasePage {
 
   async waitForPageLoad(): Promise<void> {
     await this.page.waitForLoadState('networkidle');
+    await this.dismissOverlays();
   }
 
   // ============================================

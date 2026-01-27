@@ -53,11 +53,17 @@ SUPER_ADMIN_EMAIL=admin@example.com
 SUPER_ADMIN_PASSWORD=your-password
 ```
 
-Запуск:
+### Запуск тестов
 
 ```bash
+# Первый раз (создаёт workspace)
+npm run test:setup
+
+# Потом
 npm test
 ```
+
+Если тесты падают на логине — снова `npm run test:setup`.
 
 ### GitHub Actions
 
@@ -84,34 +90,31 @@ doppler run --project kompot --config stagetest -- npx playwright test
 | Режим | Когда | Что происходит |
 |-------|-------|----------------|
 | **Tester** | Нет `MONGODB_URI` | Вход в существующий workspace, только UI тесты |
-| **CI** | Есть `MONGODB_URI` | Полный цикл: очистка → создание → все тесты |
+| **Developer** | Есть `MONGODB_URI` | Полный набор тестов с проверками в БД |
 
-В Tester Mode пропускаются:
-- Super Admin тесты (SA1, SA2)
+**Для тестировщиков** пропускаются:
+- Super Admin тесты
 - Создание workspace (уже существует)
-- Проверки в базе данных (REG1-REG3)
+- Проверки в базе данных
 
 ---
 
-## Полезные команды
+## Команды
 
-| Команда | Что делает |
-|---------|------------|
+| Команда | Описание |
+|---------|----------|
 | `npm test` | Запуск тестов |
+| `npm run test:setup` | Создать workspace с нуля |
 | `npm run test:headed` | С видимым браузером |
 | `npm run test:ui` | Интерактивный режим |
 | `npm run report` | Открыть отчёт |
 
 ---
 
-## Troubleshooting
+## Проблемы
 
-**Тест падает на логине**
-- Workspace не создан на Stage
-- Email или пароль в `.env` не совпадают с данными при регистрации
-
-**Ошибка "WS_OWNER_EMAIL и WS_OWNER_PASSWORD не заданы"**
-- Добавьте в `.env` ваши реальные credentials (Tester Mode)
-
-**Ошибка "WS_ID не задан"**
-- Добавьте `WS_ID=ваш-workspace-id` в `.env`
+| Ошибка | Решение |
+|--------|---------|
+| Тест падает на логине | `npm run test:setup` (разработчики) или проверить `.env` (тестировщики) |
+| "Invalid email or password" | `npm run test:setup` |
+| "WS_ID не задан" | Добавить `WS_ID=...` в `.env` |

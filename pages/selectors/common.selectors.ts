@@ -12,7 +12,7 @@ export const CommonSelectors = {
   sidebar: '[data-testid="sidebar"], nav',
   header: '[data-testid="header"], header',
 
-  cookieAccept: 'button:has-text("Accept")',
+  cookieAccept: 'button:has-text("Accept All"), button:has-text("Accept"), button:has-text("Reject")',
   modal: '[role="dialog"]',
   modalClose: '[role="dialog"] button:has-text("Close"), [role="dialog"] button[aria-label="Close"]',
 

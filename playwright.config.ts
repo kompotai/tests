@@ -80,6 +80,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 04: Contacts - CRUD operations on contacts
+    {
+      name: 'contacts',
+      testDir: './tests/e2e/04-contacts',
+      dependencies: ['workspace-users'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/admin.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests

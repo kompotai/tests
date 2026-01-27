@@ -82,7 +82,9 @@ jobs:
       - name: Run E2E tests
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+          FORCE_SETUP: 'true'
         # Uses Doppler config: kompot/stagetest
+        # FORCE_SETUP=true ensures fresh workspace state on each CI run
         run: doppler run --project kompot --config stagetest -- npx playwright test
 
       - name: Upload test results

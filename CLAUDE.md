@@ -61,11 +61,13 @@ Required variables (set via Doppler or `.env`):
 ### Commands
 
 ```bash
-npm run test        # Run on stage (Doppler -c stage)
-npm run test:local  # Run locally (Doppler -c dev)
-npm run test:headed # Run with browser visible
-npm run test:ui     # Run in Playwright UI mode
+npm run test:setup    # First time: create workspace
+npm test              # Run tests
+npm run test:headed   # With visible browser
+npm run test:ui       # Interactive mode
 ```
+
+If tests fail on login — run `npm run test:setup` again.
 
 ### Key Files
 
