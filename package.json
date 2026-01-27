@@ -4,10 +4,11 @@
   "description": "E2E test framework for Kompot business platform using Playwright",
   "scripts": {
     "test": "npx playwright test",
+    "test:local": "npx playwright test",
+    "test:stage": "doppler run --project kompot --config stage -- npx playwright test",
     "test:headed": "npx playwright test --headed",
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
-    "test:stage": "doppler run -c stg -- npx playwright test",
     "report": "npx playwright show-report",
     "codegen": "npx playwright codegen"
   },
