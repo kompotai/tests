@@ -32,6 +32,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
       - name: Wait for stage to be ready
         env:
           STAGE_URL: https://kompot-stage.up.railway.app
@@ -78,13 +81,9 @@ jobs:
 
       - name: Run E2E tests
         env:
-          # All secrets from GitHub Secrets (Settings → Secrets → Actions)
-          BASE_URL: ${{ secrets.BASE_URL }}
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
-          SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD }}
-          WS_MEGATEST_ID: ${{ secrets.WS_MEGATEST_ID }}
-        run: npx playwright test
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+        # Uses Doppler config: kompot/stagetest
+        run: doppler run --project kompot --config stagetest -- npx playwright test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
