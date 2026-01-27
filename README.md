@@ -2,6 +2,62 @@
 
 Тестовый фреймворк для автоматизированного тестирования бизнес-системы Kompot с использованием Playwright и TypeScript.
 
+---
+
+## ⚠️ Важный принцип: Тестирование через браузер
+
+```
+╔══════════════════════════════════════════════════════════════════════════╗
+║  ВСЕ ДЕЙСТВИЯ выполняются через БРАУЗЕР, имитируя поведение пользователя!║
+║                                                                          ║
+║  Global Setup ТОЛЬКО ОЧИЩАЕТ базу данных (DELETE операции).              ║
+║  Создание workspace, пользователей и данных — ТОЛЬКО через UI.           ║
+║                                                                          ║
+║  Прямое воздействие на БД (INSERT/UPDATE) ЗАПРЕЩЕНО, так как:            ║
+║  - Нарушает честность тестов                                             ║
+║  - Обходит бизнес-логику приложения                                      ║
+║  - Не тестирует реальные сценарии использования                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+```
+
+### Архитектура тестов
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. GLOBAL SETUP (global-setup.ts)                           │
+│    - Валидация env переменных                               │
+│    - УДАЛЕНИЕ ТОЛЬКО megatest workspace и его owner         │
+│    - ⚠️ Другие workspaces НЕ затрагиваются!                 │
+│    - ⚠️ Только DELETE! Никаких INSERT/UPDATE!               │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 2. SETUP PROJECT (tests/e2e/setup/)                         │
+│    - Регистрация owner через /account/register              │
+│    - Создание workspace через UI                            │
+│    - Создание admin/employee через Settings > Users         │
+│    - Сохранение auth state в .auth/*.json                   │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 3. MAIN TESTS (tests/e2e/*)                                 │
+│    - Используют сохранённый auth state                      │
+│    - Тестируют функциональность через UI                    │
+│    - Запускаются параллельно                                │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Auth State (storageState)
+
+Setup тесты сохраняют auth state для каждой роли:
+- `.auth/owner.json` — авторизация owner
+- `.auth/admin.json` — авторизация admin
+- `.auth/employee.json` — авторизация employee
+
+Остальные тесты используют эти файлы и стартуют **уже авторизованными** — без UI логина!
+
+---
+
 ## Структура проекта
 
 ```
@@ -47,13 +103,20 @@ npx playwright install
 cp .env.example .env
 ```
 
-4. Заполните `.env` файл своими тестовыми данными:
+4. Заполните `.env` файл (пример уже в репозитории):
 ```env
-BASE_URL=https://kompot-stage.up.railway.app
-WORKSPACE_ID=your_workspace_id
-TEST_USER_EMAIL=test@example.com
-TEST_USER_PASSWORD=your_password
+BASE_URL="http://localhost:3000"
+MONGODB_URI="mongodb://kompot:kompot@localhost:27017/?authSource=admin"
+WS_MEGATEST_ID="megatest"
+WS_MEGATEST_OWNER_EMAIL="megatest-owner@kompot.ai"
+WS_MEGATEST_OWNER_PASSWORD="MegatestOwner123!"
+WS_MEGATEST_ADMIN_EMAIL="megatest-admin@kompot.ai"
+WS_MEGATEST_ADMIN_PASSWORD="MegatestAdmin123!"
+WS_MEGATEST_EMPLOYEE_EMAIL="megatest-employee@kompot.ai"
+WS_MEGATEST_EMPLOYEE_PASSWORD="MegatestEmployee123!"
 ```
+
+**ВАЖНО:** Doppler НЕ используется для локальной разработки. Все переменные берутся из `.env` файла.
 
 ## Запуск тестов
 
