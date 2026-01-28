@@ -10,8 +10,8 @@
 
 import * as dotenv from 'dotenv';
 
-// Загружаем .env с перезаписью shell переменных
-dotenv.config({ override: true });
+// Загружаем .env как fallback (не перезаписывает Doppler/shell переменные)
+dotenv.config({ override: false });
 
 export default async function globalSetup() {
   console.log('\n🚀 Global Setup\n');

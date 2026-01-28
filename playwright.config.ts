@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
-// Load .env and OVERRIDE existing shell env vars
-dotenv.config({ override: true });
+// Load .env as fallback (don't override Doppler/shell vars)
+dotenv.config({ override: false });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
