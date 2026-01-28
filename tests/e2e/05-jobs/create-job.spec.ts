@@ -1,0 +1,38 @@
+import { test, expect } from '@playwright/test';
+
+test('create-job', async ({ page }) => {
+  await page.goto('https://kompot-stage.up.railway.app/account/login');
+  await page.getByTestId('login-input-wsid').click();
+  await page.getByTestId('login-input-wsid').fill('ng26');
+  await page.getByTestId('login-input-email').click();
+  await page.getByTestId('login-input-email').fill('galyamovanatalya13@gmail.com');
+  await page.getByTestId('login-input-password').click();
+  await page.getByTestId('login-input-password').fill('Y!XF5MW%AQev');
+  await page.getByTestId('login-button-submit').click();
+  await page.getByRole('link', { name: 'Jobs' }).click();
+  await page.getByRole('button', { name: 'Create Job' }).click();
+  await page.getByRole('textbox', { name: 'Title*' }).click();
+  await page.getByRole('textbox', { name: 'Title*' }).fill('Call a client');
+  await page.locator('.color-select__input-container').first().click();
+  await page.getByText('Consultation').click();
+  await page.locator('.color-select__indicator.color-select__dropdown-indicator.css-uz1vf6-indicatorContainer > .css-8mmkcg').first().click();
+  await page.getByText('In Progress').click();
+  await page.getByRole('button', { name: 'Start at *' }).click();
+  await page.getByRole('button', { name: 'Wednesday, January 28th,' }).click();
+  await page.locator('select').first().selectOption('11');
+  await page.getByRole('button', { name: 'End at *' }).click();
+  await page.getByRole('button', { name: 'Wednesday, January 28th,' }).click();
+  await page.locator('select').first().selectOption('13');
+  await page.locator('.entity-select__indicator > .css-8mmkcg').click();
+  await page.getByRole('option', { name: 'Sample Contact (Sample' }).click();
+  await page.locator('div:nth-child(5) > div > .css-b62m3t-container > .color-select__control > .color-select__indicators > .color-select__indicator > .css-8mmkcg').click();
+  await page.locator('#react-select-6-option-0 div').filter({ hasText: /^Natalya Galyamova Test$/ }).click();
+  await page.locator('div:nth-child(6) > div > div > .css-b62m3t-container > .color-select__control > .color-select__indicators > .color-select__indicator > .css-8mmkcg').first().click();
+  await page.locator('#react-select-7-option-0 div').filter({ hasText: /^Sample Project$/ }).click();
+  await page.locator('div:nth-child(6) > div:nth-child(2) > div > .css-b62m3t-container > .color-select__control > .color-select__indicators > .color-select__indicator > .css-8mmkcg').click();
+  await page.locator('#react-select-8-option-0 div').filter({ hasText: /^Sample Opportunity$/ }).click();
+  await page.getByRole('textbox', { name: 'Description' }).click();
+  await page.getByRole('textbox', { name: 'Description' }).fill('Consult a client');
+  await page.getByTestId('cookie-accept-all').click();
+  await page.getByRole('button', { name: 'Create job', exact: true }).click();
+});
