@@ -5,7 +5,7 @@
  * Uses fixtures from contacts.fixture.ts for test data.
  */
 
-import { adminTest, expect } from '@fixtures/auth.fixture';
+import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { ContactsPage } from '@pages/ContactsPage';
 import {
   // Factory functions
@@ -38,10 +38,10 @@ import {
   INVALID_EMPTY_NAME,
 } from './contacts.fixture';
 
-adminTest.describe('Contact Creation', () => {
+ownerTest.describe('Contact Creation', () => {
   let contactsPage: ContactsPage;
 
-  adminTest.beforeEach(async ({ page }) => {
+  ownerTest.beforeEach(async ({ page }) => {
     contactsPage = new ContactsPage(page);
     await contactsPage.goto();
   });
@@ -50,8 +50,8 @@ adminTest.describe('Contact Creation', () => {
   // Basic Creation Tests
   // ============================================
 
-  adminTest.describe('Basic Creation', () => {
-    adminTest('creates contact with name only (minimal)', async () => {
+  ownerTest.describe('Basic Creation', () => {
+    ownerTest('creates contact with name only (minimal)', async () => {
       const contact = createMinimalContact();
 
       await contactsPage.create(contact);
@@ -59,7 +59,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with all basic fields', async () => {
+    ownerTest('creates contact with all basic fields', async () => {
       const contact = createFullContact();
 
       await contactsPage.create(contact);
@@ -67,7 +67,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates complete contact with all fields', async () => {
+    ownerTest('creates complete contact with all fields', async () => {
       const contact = createCompleteContact();
 
       await contactsPage.create(contact);
@@ -80,8 +80,8 @@ adminTest.describe('Contact Creation', () => {
   // Single Field Variations
   // ============================================
 
-  adminTest.describe('Single Field Variations', () => {
-    adminTest('creates contact with email only', async () => {
+  ownerTest.describe('Single Field Variations', () => {
+    ownerTest('creates contact with email only', async () => {
       const contact = createContact({
         name: CONTACT_WITH_EMAIL.name,
         emails: CONTACT_WITH_EMAIL.emails,
@@ -92,7 +92,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with phone only', async () => {
+    ownerTest('creates contact with phone only', async () => {
       const contact = createContact({
         name: CONTACT_WITH_PHONE.name,
         phones: CONTACT_WITH_PHONE.phones,
@@ -103,7 +103,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with company only', async () => {
+    ownerTest('creates contact with company only', async () => {
       const contact = createContact({
         name: CONTACT_WITH_COMPANY.name,
         company: CONTACT_WITH_COMPANY.company,
@@ -114,7 +114,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with position only', async () => {
+    ownerTest('creates contact with position only', async () => {
       const contact = createContact({
         name: CONTACT_WITH_POSITION.name,
         position: CONTACT_WITH_POSITION.position,
@@ -125,7 +125,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with notes only', async () => {
+    ownerTest('creates contact with notes only', async () => {
       const contact = createContact({
         name: CONTACT_WITH_NOTES.name,
         notes: CONTACT_WITH_NOTES.notes,
@@ -136,7 +136,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with telegram only', async () => {
+    ownerTest('creates contact with telegram only', async () => {
       const contact = createContact({
         name: CONTACT_WITH_TELEGRAM.name,
         telegrams: CONTACT_WITH_TELEGRAM.telegrams,
@@ -152,8 +152,8 @@ adminTest.describe('Contact Creation', () => {
   // Business Style Contacts
   // ============================================
 
-  adminTest.describe('Business Contacts', () => {
-    adminTest('creates B2B style contact', async () => {
+  ownerTest.describe('Business Contacts', () => {
+    ownerTest('creates B2B style contact', async () => {
       const contact = createBusinessContact();
 
       await contactsPage.create(contact);
@@ -161,7 +161,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with company and position', async () => {
+    ownerTest('creates contact with company and position', async () => {
       const contact = createContact({
         name: CONTACT_B2B_STYLE.name,
         emails: CONTACT_B2B_STYLE.emails,
@@ -179,8 +179,8 @@ adminTest.describe('Contact Creation', () => {
   // Multiple Values Tests
   // ============================================
 
-  adminTest.describe('Multiple Values', () => {
-    adminTest('creates contact with multiple emails', async () => {
+  ownerTest.describe('Multiple Values', () => {
+    ownerTest('creates contact with multiple emails', async () => {
       const contact = createContact({
         name: CONTACT_MULTIPLE_EMAILS.name,
         emails: CONTACT_MULTIPLE_EMAILS.emails,
@@ -191,7 +191,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with multiple phones', async () => {
+    ownerTest('creates contact with multiple phones', async () => {
       const contact = createContact({
         name: CONTACT_MULTIPLE_PHONES.name,
         phones: CONTACT_MULTIPLE_PHONES.phones,
@@ -207,8 +207,8 @@ adminTest.describe('Contact Creation', () => {
   // Address Tests
   // ============================================
 
-  adminTest.describe('Address Handling', () => {
-    adminTest('creates contact with US address', async () => {
+  ownerTest.describe('Address Handling', () => {
+    ownerTest('creates contact with US address', async () => {
       const contact = createContactWithAddress(US_ADDRESS);
 
       await contactsPage.create(contact);
@@ -216,7 +216,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with Russian address', async () => {
+    ownerTest('creates contact with Russian address', async () => {
       const contact = createContactWithAddress(RU_ADDRESS);
 
       await contactsPage.create(contact);
@@ -229,8 +229,8 @@ adminTest.describe('Contact Creation', () => {
   // Name Edge Cases
   // ============================================
 
-  adminTest.describe('Name Edge Cases', () => {
-    adminTest('creates contact with unicode name', async () => {
+  ownerTest.describe('Name Edge Cases', () => {
+    ownerTest('creates contact with unicode name', async () => {
       const contact = createContact({ name: CONTACT_UNICODE_NAME.name });
 
       await contactsPage.create(contact);
@@ -238,7 +238,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with special characters', async () => {
+    ownerTest('creates contact with special characters', async () => {
       const contact = createContact({ name: CONTACT_SPECIAL_CHARS_NAME.name });
 
       await contactsPage.create(contact);
@@ -246,7 +246,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with numbers in name', async () => {
+    ownerTest('creates contact with numbers in name', async () => {
       const contact = createContact({ name: CONTACT_WITH_NUMBERS.name });
 
       await contactsPage.create(contact);
@@ -259,8 +259,8 @@ adminTest.describe('Contact Creation', () => {
   // Phone Format Tests
   // ============================================
 
-  adminTest.describe('Phone Formats', () => {
-    adminTest('creates contact with US phone', async () => {
+  ownerTest.describe('Phone Formats', () => {
+    ownerTest('creates contact with US phone', async () => {
       const contact = createContact({
         name: CONTACT_US_PHONE.name,
         phones: CONTACT_US_PHONE.phones,
@@ -271,7 +271,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with Russian phone', async () => {
+    ownerTest('creates contact with Russian phone', async () => {
       const contact = createContact({
         name: CONTACT_RU_PHONE.name,
         phones: CONTACT_RU_PHONE.phones,
@@ -282,7 +282,7 @@ adminTest.describe('Contact Creation', () => {
       await contactsPage.shouldSeeContact(contact.name);
     });
 
-    adminTest('creates contact with UK phone', async () => {
+    ownerTest('creates contact with UK phone', async () => {
       const contact = createContact({
         name: CONTACT_UK_PHONE.name,
         phones: CONTACT_UK_PHONE.phones,
@@ -298,8 +298,8 @@ adminTest.describe('Contact Creation', () => {
   // Validation Tests
   // ============================================
 
-  adminTest.describe('Validation', () => {
-    adminTest('shows error when name is empty', async ({ page }) => {
+  ownerTest.describe('Validation', () => {
+    ownerTest('shows error when name is empty', async ({ page }) => {
       await contactsPage.openCreateForm();
 
       // Try to submit without filling name
@@ -310,7 +310,7 @@ adminTest.describe('Contact Creation', () => {
       expect(formVisible).toBe(true);
     });
 
-    adminTest('form remains open after validation error', async ({ page }) => {
+    ownerTest('form remains open after validation error', async ({ page }) => {
       await contactsPage.openCreateForm();
 
       // Fill with invalid data (empty name)
@@ -327,22 +327,22 @@ adminTest.describe('Contact Creation', () => {
   // UI Behavior Tests
   // ============================================
 
-  adminTest.describe('UI Behavior', () => {
-    adminTest('opens create form when clicking create button', async ({ page }) => {
+  ownerTest.describe('UI Behavior', () => {
+    ownerTest('opens create form when clicking create button', async ({ page }) => {
       await contactsPage.openCreateForm();
 
       const formVisible = await contactsPage.shouldSeeForm();
       expect(formVisible).toBe(true);
     });
 
-    adminTest('form has empty name field initially', async ({ page }) => {
+    ownerTest('form has empty name field initially', async ({ page }) => {
       await contactsPage.openCreateForm();
 
       const nameValue = await contactsPage.getFormNameValue();
       expect(nameValue).toBe('');
     });
 
-    adminTest('can cancel contact creation', async ({ page }) => {
+    ownerTest('can cancel contact creation', async ({ page }) => {
       await contactsPage.openCreateForm();
 
       // Click cancel button

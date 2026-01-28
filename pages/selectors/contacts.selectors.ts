@@ -38,8 +38,39 @@ export const ContactsSelectors = {
     cancel: '[data-testid="contact-form-button-cancel"]',
   },
 
+  // Table row and actions
   row: (identifier: string) => `tr:has-text("${identifier}")`,
-  rowEditButton: 'td:last-child button:first-child',
-  rowDeleteButton: 'button:has-text("Delete")',
+  rowName: (identifier: string) => `tr:has-text("${identifier}") td:first-child`,
+  rowNameLink: (identifier: string) => `tr:has-text("${identifier}") td:first-child button, tr:has-text("${identifier}") td:first-child a`,
+  rowViewButton: (identifier: string) => `tr:has-text("${identifier}") a[href*="/contacts/"]`,
+  rowEditButton: (identifier: string) => `tr:has-text("${identifier}") button:has(svg.lucide-pencil)`,
+  rowDeleteButton: (identifier: string) => `tr:has-text("${identifier}") button:has(svg.lucide-trash-2)`,
+
+  // Badges in table row
+  rowTypeBadge: (identifier: string) => `tr:has-text("${identifier}") button:has-text("type"), tr:has-text("${identifier}") button:has-text("тип")`,
+  rowSourceBadge: (identifier: string) => `tr:has-text("${identifier}") button:has-text("source"), tr:has-text("${identifier}") button:has-text("источник")`,
+
+  // Badge popover
+  badgePopover: '[role="dialog"], [data-radix-popper-content-wrapper]',
+  badgeOption: (label: string) => `[role="option"]:has-text("${label}"), button:has-text("${label}")`,
+  badgeClear: 'button:has-text("Clear"), button:has-text("Очистить")',
+
+  // Quick view panel (slide-over)
+  quickViewPanel: '[data-testid="contact-preview-panel"], [class*="fixed"][class*="right-0"]',
+  quickViewBackdrop: '[class*="fixed"][class*="inset-0"][class*="bg-black"]',
+  quickViewClose: '[data-testid="contact-preview-close"], button[aria-label="Close"]',
+
+  // Contact detail page
+  detailPage: '[data-testid="contact-detail"], [class*="ContactContent"], main',
+  detailName: 'h1, [data-testid="contact-name"]',
+  detailEmail: '[data-testid="contact-email"], a[href^="mailto:"]',
+  detailPhone: '[data-testid="contact-phone"], a[href^="tel:"]',
+  detailCompany: '[data-testid="contact-company"]',
+  detailPosition: '[data-testid="contact-position"]',
+  detailEditButton: 'button:has(svg.lucide-pencil), button:has-text("Edit")',
+
+  // Legacy selectors (keep for backward compatibility)
+  rowEditButtonLegacy: 'td:last-child button:first-child',
+  rowDeleteButtonLegacy: 'button:has-text("Delete")',
   rowOpenLink: 'a:has-text("Open page")',
 } as const;
