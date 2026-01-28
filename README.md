@@ -1,261 +1,120 @@
-# Kompot E2E Test Framework
+# Kompot E2E Tests
 
-Тестовый фреймворк для автоматизированного тестирования бизнес-системы Kompot с использованием Playwright и TypeScript.
+## Для тестировщиков
 
-## Структура проекта
+### Шаг 1: Создайте workspace на Stage
 
-```
-kompot-tests/
-├── tests/              # Тестовые сценарии
-│   ├── auth/          # Тесты аутентификации
-│   ├── navigation/    # Тесты навигации
-│   └── forms/         # Тесты форм и валидации
-├── pages/             # Page Object Models
-│   ├── BasePage.ts    # Базовый класс для всех страниц
-│   ├── LoginPage.ts   # Page Object для страницы логина
-│   └── HomePage.ts    # Page Object для главной страницы
-├── fixtures/          # Кастомные фикстуры
-│   └── auth.fixture.ts # Фикстура для автоматической авторизации
-├── utils/             # Вспомогательные функции
-├── playwright.config.ts  # Конфигурация Playwright
-├── tsconfig.json      # Конфигурация TypeScript
-├── .env              # Переменные окружения (не в git)
-└── .env.example      # Пример переменных окружения
-```
+Откройте https://kompot-stage.up.railway.app/account/register и зарегистрируйтесь.
 
-## Установка
+При регистрации:
+- Придумайте **Workspace ID** (например: `tester-ivan`)
+- Используйте любой email и пароль
 
-### Требования
+### Шаг 2: Настройте окружение
 
-- Node.js 18+
-- npm или yarn
-
-### Шаги установки
-
-1. Установите зависимости:
 ```bash
+git clone git@github.com:kompotai/tests.git
+cd tests
 npm install
+npx playwright install chromium
 ```
 
-2. Установите браузеры Playwright:
-```bash
-npx playwright install
-```
+Создайте файл `.env`:
 
-3. Создайте файл `.env` на основе `.env.example`:
-```bash
-cp .env.example .env
-```
-
-4. Заполните `.env` файл своими тестовыми данными:
 ```env
 BASE_URL=https://kompot-stage.up.railway.app
-WORKSPACE_ID=your_workspace_id
-TEST_USER_EMAIL=test@example.com
-TEST_USER_PASSWORD=your_password
+WS_ID=tester-ivan
+WS_OWNER_EMAIL=your-email@example.com
+WS_OWNER_PASSWORD=your-password
 ```
 
-## Запуск тестов
+### Шаг 3: Запустите тесты
 
-### Основные команды
-
-Запуск всех тестов:
 ```bash
 npm test
 ```
 
-Запуск тестов с видимым браузером:
-```bash
-npm run test:headed
+---
+
+## Для разработчиков
+
+### Локальная разработка (CI Mode)
+
+Создайте `.env` с полным набором переменных:
+
+```env
+# Обязательные
+BASE_URL=http://localhost:3000
+WS_ID=megatest
+MONGODB_URI=mongodb://kompot:kompot@localhost:27017/?authSource=admin
+
+# Для Super Admin тестов
+SUPER_ADMIN_EMAIL=admin@example.com
+SUPER_ADMIN_PASSWORD=your-password
 ```
 
-Запуск тестов в UI режиме (с интерактивным интерфейсом):
-```bash
-npm run test:ui
-```
-
-Запуск тестов в режиме отладки:
-```bash
-npm run test:debug
-```
-
-### Запуск в конкретных браузерах
-
-Chrome:
-```bash
-npm run test:chrome
-```
-
-Firefox:
-```bash
-npm run test:firefox
-```
-
-Safari:
-```bash
-npm run test:webkit
-```
-
-### Запуск конкретных тестов
-
-Запуск тестов из конкретной папки:
-```bash
-npx playwright test tests/auth
-```
-
-Запуск конкретного файла:
-```bash
-npx playwright test tests/auth/login.spec.ts
-```
-
-Запуск тестов по названию:
-```bash
-npx playwright test -g "should successfully login"
-```
-
-## Просмотр отчетов
-
-После выполнения тестов откройте HTML отчет:
-```bash
-npm run report
-```
-
-## Написание тестов
-
-### Базовый пример теста
-
-```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('My Feature', () => {
-  test('should do something', async ({ page }) => {
-    await page.goto('/');
-    await expect(page).toHaveTitle(/Kompot/);
-  });
-});
-```
-
-### Использование Page Objects
-
-```typescript
-import { test, expect } from '../../fixtures/auth.fixture';
-
-test('should login successfully', async ({ loginPage, homePage }) => {
-  await loginPage.goto();
-  await loginPage.login('workspace', 'email@test.com', 'password');
-
-  const isLoggedIn = await homePage.isLoggedIn();
-  expect(isLoggedIn).toBeTruthy();
-});
-```
-
-### Использование authenticated fixture
-
-Для тестов, требующих авторизации:
-
-```typescript
-import { test, expect } from '../../fixtures/auth.fixture';
-
-test('should access protected page', async ({ authenticatedPage, page }) => {
-  // Пользователь уже авторизован
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/dashboard/);
-});
-```
-
-## Генерация тестов
-
-Playwright предоставляет инструмент для записи действий и генерации кода:
+### Запуск тестов
 
 ```bash
-npm run codegen
+# Первый раз (создаёт workspace)
+npm run test:setup
+
+# Потом
+npm test
 ```
 
-Это откроет браузер и панель для записи ваших действий.
+Если тесты падают на логине — снова `npm run test:setup`.
 
-## Отладка тестов
+### GitHub Actions
 
-### Пошаговая отладка
+CI использует Doppler с конфигом `stagetest`:
 
 ```bash
-npm run test:debug
+doppler run --project kompot --config stagetest -- npx playwright test
 ```
 
-### Использование Playwright Inspector
+Переменные в Doppler `stagetest`:
 
-```bash
-npx playwright test --debug
-```
+| Переменная | Описание |
+|------------|----------|
+| `BASE_URL` | https://kompot-stage.up.railway.app |
+| `WS_ID` | megatest |
+| `MONGODB_URI` | Stage MongoDB connection string |
+| `SUPER_ADMIN_EMAIL` | Super admin email |
+| `SUPER_ADMIN_PASSWORD` | Super admin password |
 
-### Просмотр трассировки
+---
 
-Если тест упал, откройте трассировку:
-```bash
-npx playwright show-trace test-results/path-to-trace.zip
-```
+## Режимы работы
 
-## Best Practices
+| Режим | Когда | Что происходит |
+|-------|-------|----------------|
+| **Tester** | Нет `MONGODB_URI` | Вход в существующий workspace, только UI тесты |
+| **Developer** | Есть `MONGODB_URI` | Полный набор тестов с проверками в БД |
 
-1. **Используйте Page Objects** - инкапсулируйте логику работы со страницей
-2. **Не дублируйте селекторы** - храните их в Page Objects
-3. **Используйте test.describe** для группировки связанных тестов
-4. **Используйте beforeEach/afterEach** для подготовки и очистки данных
-5. **Делайте тесты независимыми** - каждый тест должен работать отдельно
-6. **Используйте явные ожидания** - не используйте sleep/timeout без необходимости
-7. **Проверяйте важные элементы** - не только успешный сценарий, но и ошибки
+**Для тестировщиков** пропускаются:
+- Super Admin тесты
+- Создание workspace (уже существует)
+- Проверки в базе данных
 
-## Переменные окружения
+---
 
-Все чувствительные данные хранятся в `.env` файле:
+## Команды
 
-- `BASE_URL` - базовый URL приложения
-- `WORKSPACE_ID` - ID рабочего пространства для тестов
-- `TEST_USER_EMAIL` - email тестового пользователя
-- `TEST_USER_PASSWORD` - пароль тестового пользователя
+| Команда | Описание |
+|---------|----------|
+| `npm test` | Запуск тестов |
+| `npm run test:setup` | Создать workspace с нуля |
+| `npm run test:headed` | С видимым браузером |
+| `npm run test:ui` | Интерактивный режим |
+| `npm run report` | Открыть отчёт |
 
-## CI/CD
+---
 
-Тесты готовы для запуска в CI/CD. Пример для GitHub Actions:
+## Проблемы
 
-```yaml
-name: Playwright Tests
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - name: Install dependencies
-        run: npm ci
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-      - name: Run tests
-        run: npm test
-        env:
-          BASE_URL: ${{ secrets.BASE_URL }}
-          WORKSPACE_ID: ${{ secrets.WORKSPACE_ID }}
-          TEST_USER_EMAIL: ${{ secrets.TEST_USER_EMAIL }}
-          TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
-      - uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-```
-
-## Полезные ссылки
-
-- [Playwright Documentation](https://playwright.dev)
-- [Playwright Best Practices](https://playwright.dev/docs/best-practices)
-- [Playwright API Reference](https://playwright.dev/docs/api/class-playwright)
-
-## Поддержка
-
-При возникновении проблем:
-1. Проверьте, что все зависимости установлены
-2. Убедитесь, что `.env` файл заполнен корректно
-3. Проверьте, что браузеры Playwright установлены
-4. Посмотрите логи и трассировку тестов
+| Ошибка | Решение |
+|--------|---------|
+| Тест падает на логине | `npm run test:setup` (разработчики) или проверить `.env` (тестировщики) |
+| "Invalid email or password" | `npm run test:setup` |
+| "WS_ID не задан" | Добавить `WS_ID=...` в `.env` |

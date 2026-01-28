@@ -29,6 +29,7 @@ As a [role], I want to [action] so that [benefit].
 | Contacts | C | C1, C2, C3 |
 | Opportunities | O | O1, O2, O3 |
 | Settings | S | S1, S2, S3 |
+| Tasks | T | T1, T2, T3 |
 
 ## Test Pattern
 

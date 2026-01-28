@@ -3,15 +3,16 @@
   "version": "1.0.0",
   "description": "E2E test framework for Kompot business platform using Playwright",
   "scripts": {
-    "test": "doppler run -- playwright test",
-    "test:headed": "doppler run -- playwright test --headed",
-    "test:ui": "doppler run -- playwright test --ui",
-    "test:debug": "doppler run -- playwright test --debug",
-    "test:chrome": "doppler run -- playwright test --project=chromium",
-    "test:firefox": "doppler run -- playwright test --project=firefox",
-    "test:webkit": "doppler run -- playwright test --project=webkit",
-    "report": "doppler run -- playwright show-report",
-    "codegen": "doppler run -- playwright codegen https://kompot-stage.up.railway.app/"
+    "test": "npx playwright test",
+    "test:local": "npx playwright test",
+    "test:stage": "doppler run --project kompot --config stage -- npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug",
+    "test:setup": "FORCE_SETUP=true npx playwright test --project=company-owner",
+    "test:setup:stage": "doppler run --project kompot --config stage -- env FORCE_SETUP=true npx playwright test --project=company-owner",
+    "report": "npx playwright show-report",
+    "codegen": "npx playwright codegen"
   },
   "keywords": [
     "playwright",
@@ -25,6 +26,7 @@
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.5",
     "dotenv": "^16.4.7",
+    "mongodb": "^7.0.0",
     "typescript": "^5.7.3"
   }
 }

@@ -1,0 +1,81 @@
+/**
+ * Users Login Verification
+ *
+ * Verifies that all created users can log in to the workspace.
+ * This runs after 01-create-users.spec.ts has created the users.
+ */
+
+import { test, expect } from '@playwright/test';
+import { USERS, OWNER } from '@fixtures/users';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const WORKSPACE_ID = process.env.WS_MEGATEST_ID || 'megatest';
+const AUTH_DIR = path.join(__dirname, '../../../.auth');
+
+test.describe('Users Login Verification', () => {
+  // Test that owner auth state exists and works
+  test('owner auth state is valid', async ({ page }) => {
+    const authFile = path.join(AUTH_DIR, 'owner.json');
+    expect(fs.existsSync(authFile)).toBe(true);
+
+    // Try to access workspace with owner auth
+    await page.goto('/ws/contacts');
+    await page.waitForLoadState('networkidle');
+
+    // Should be in workspace (not redirected to login)
+    expect(page.url()).toContain('/ws');
+    console.log('✅ Owner auth state is valid');
+  });
+
+  // Test each user can login with their credentials
+  for (const user of USERS) {
+    test(`${user.key} can login to workspace`, async ({ browser }) => {
+      const authFile = path.join(AUTH_DIR, `${user.key}.json`);
+
+      // First verify auth file exists
+      expect(fs.existsSync(authFile)).toBe(true);
+
+      // Create context with user's auth state
+      const context = await browser.newContext({
+        storageState: authFile,
+      });
+      const page = await context.newPage();
+
+      // Try to access workspace
+      await page.goto('/ws/contacts');
+      await page.waitForLoadState('networkidle');
+
+      // Should be in workspace (not redirected to login)
+      expect(page.url()).toContain('/ws');
+      console.log(`✅ ${user.key} auth state is valid`);
+
+      await context.close();
+    });
+  }
+
+  // Test that users can login with credentials (fresh login without any stored auth)
+  test('admin can login with fresh credentials', async ({ browser }) => {
+    const testUser = USERS[0]; // admin
+
+    // Create context WITHOUT any storage state (no cookies/session)
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    const page = await context.newPage();
+
+    await page.goto('/account/login');
+    await page.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
+
+    await page.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
+    await page.fill('[data-testid="login-input-email"]', testUser.email);
+    await page.fill('[data-testid="login-input-password"]', testUser.password);
+    await page.click('[data-testid="login-button-submit"]');
+
+    await page.waitForURL(/\/ws/, { timeout: 20000 });
+    expect(page.url()).toContain('/ws');
+
+    console.log(`✅ ${testUser.key} can login with fresh credentials`);
+    await context.close();
+  });
+});

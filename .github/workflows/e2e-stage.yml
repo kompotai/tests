@@ -82,8 +82,10 @@ jobs:
       - name: Run E2E tests
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-          BASE_URL: https://kompot-stage.up.railway.app
-        run: doppler run --project kompot --config stage -- npx playwright test --project=chromium
+          FORCE_SETUP: 'true'
+        # Uses Doppler config: kompot/stagetest
+        # FORCE_SETUP=true ensures fresh workspace state on each CI run
+        run: doppler run --project kompot --config stagetest -- npx playwright test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
