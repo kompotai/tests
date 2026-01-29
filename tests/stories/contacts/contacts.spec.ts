@@ -11,7 +11,7 @@
  * - C5: Search Contacts
  */
 
-import { test, expect } from '../../../fixtures/world.fixture';
+import { test, expect } from '@fixtures/world.fixture';
 import {
   fillField,
   clickButton,
@@ -79,9 +79,45 @@ test.describe('Contacts', () => {
       await world.page.waitForTimeout(1000); // Wait for sidebar to close
       expect(await world.shouldSee(uniqueName)).toBeTruthy();
     });
+
+    test('[C2] User can create a contact with all fields filled', async ({ world }) => {
+      await world.goto('/ws/contacts');
+      await waitForLoading(world.page);
+      await clickButton(world.page, 'Create Contact');
+      await world.page.waitForTimeout(500);
+      const uniqueName = `Test ${Date.now()}`;
+      await fillField(world.page, 'name', uniqueName);
+
+      const uniqueEmail = `search${Date.now()}@test.com`;
+      await fillField(world.page, 'email', uniqueEmail);
+
+      const uniquePhone = `${Date.now()}`.slice(-10);
+      await fillField(world.page, 'phone', uniquePhone);
+
+      const contactTypeDropdown = world.page.locator('#contactType');
+      await contactTypeDropdown.click();
+      await world.page.getByText('Client').click();
+
+      const sourceDropdown = world.page.locator('#source');
+      await sourceDropdown.click();
+      await world.page.getByText('Advertising').click();
+
+
+      await fillField(world.page, 'company', `Company ${Date.now()}`);
+      await fillField(world.page, 'position', 'Worker');
+
+      await world.page.locator('textarea[name="notes"]');
+      await fillField(world.page, 'notes', `Test note ${Date.now()}`);
+
+      await clickButton(world.page, 'Save');
+      await waitForLoading(world.page);
+      await world.page.waitForTimeout(1000); // Wait for sidebar to close
+      expect(await world.shouldSee(uniqueName)).toBeTruthy();
+    });
   });
 
-  test.describe('C3: Edit Contact', () => {
+
+test.describe('C3: Edit Contact', () => {
     test('[C3] User can edit contact', async ({ world }) => {
       await world.goto('/ws/contacts');
       await waitForLoading(world.page);
