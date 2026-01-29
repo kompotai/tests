@@ -9,7 +9,7 @@ import { Page, expect } from '@playwright/test';
 import { Selectors } from './selectors';
 
 export abstract class BasePage {
-  constructor(protected page: Page) {}
+  constructor(public readonly page: Page) {}
 
   // ============================================
   // Navigation

@@ -9,9 +9,52 @@
  */
 
 import * as dotenv from 'dotenv';
+import { MongoClient, ObjectId } from 'mongodb';
 
 // Загружаем .env как fallback (не перезаписывает Doppler/shell переменные)
 dotenv.config({ override: false });
+
+// Required test contacts for agreements E2E tests
+const TEST_CONTACTS = [
+  { name: 'Carol Lopez', email: 'carol.lopez@megatest.kompot.ai' },
+  { name: 'Thomas Walker', email: 'thomas.walker@megatest.kompot.ai' },
+  { name: 'Nancy Moore', email: 'nancy.moore@megatest.kompot.ai' },
+];
+
+/**
+ * Ensure required test contacts exist in the workspace database
+ */
+async function ensureTestContacts(mongoUri: string, wsId: string): Promise<void> {
+  const client = new MongoClient(mongoUri);
+
+  try {
+    await client.connect();
+    const db = client.db(`ws_${wsId}`);
+    const contacts = db.collection('contacts');
+
+    for (const contact of TEST_CONTACTS) {
+      const existing = await contacts.findOne({ name: contact.name });
+
+      if (!existing) {
+        await contacts.insertOne({
+          _id: new ObjectId(),
+          name: contact.name,
+          emails: [{ address: contact.email, isVerified: true, isSubscribed: true }],
+          phones: [],
+          addresses: [],
+          ownerId: new ObjectId(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        console.log(`    ✅ Created test contact: ${contact.name}`);
+      } else {
+        console.log(`    ✓  Test contact exists: ${contact.name}`);
+      }
+    }
+  } finally {
+    await client.close();
+  }
+}
 
 export default async function globalSetup() {
   console.log('\n🚀 Global Setup\n');
@@ -69,6 +112,16 @@ export default async function globalSetup() {
     console.log(`  WS_ID:        ${wsId}`);
     console.log(`  MongoDB:      ✅ Доступен`);
     console.log(`  Super Admin:  ${hasSuperAdmin ? '✅ Доступен' : '⚠️  Не задан (тесты SA будут пропущены)'}`);
+    console.log('─'.repeat(60));
+
+    // Ensure test contacts exist for agreements tests
+    console.log('  📋 Проверка тестовых контактов:');
+    try {
+      await ensureTestContacts(process.env.MONGODB_URI!, wsId);
+    } catch (error) {
+      console.error('  ⚠️  Ошибка создания контактов:', error);
+    }
+
     console.log('─'.repeat(60));
     console.log('  Тесты:');
     console.log('    ✅ Super Admin (SA1, SA2)' + (hasSuperAdmin ? '' : ' — SKIP'));
