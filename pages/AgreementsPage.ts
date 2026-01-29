@@ -454,17 +454,17 @@ export class AgreementsPage extends BasePage {
   // ============================================
 
   async getCurrentPdfPage(): Promise<number> {
-    // The current page has bg-zinc-900 class (dark background)
+    // The current page has bg-zinc-800 class (dark background)
     const activeButton = this.page.locator('button[data-testid^="pdf-page-"]').filter({
-      has: this.page.locator('.bg-zinc-900'),
-    }).or(this.page.locator('button.bg-zinc-900[data-testid^="pdf-page-"]'));
+      has: this.page.locator('.bg-zinc-800'),
+    }).or(this.page.locator('button.bg-zinc-800[data-testid^="pdf-page-"]'));
 
     // Try to find active button by class
     let activeText = '';
     const buttons = await this.page.locator('button[data-testid^="pdf-page-"]').all();
     for (const btn of buttons) {
       const className = await btn.getAttribute('class');
-      if (className?.includes('bg-zinc-900')) {
+      if (className?.includes('bg-zinc-800')) {
         activeText = await btn.textContent() || '';
         break;
       }

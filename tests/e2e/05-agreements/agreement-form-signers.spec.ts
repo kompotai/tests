@@ -55,6 +55,7 @@ ownerTest.describe('Agreement Form Signers', () => {
 
   const testContact1 = TEST_CONTACTS.CONTACT_1; // Carol Lopez
   const testContact2 = TEST_CONTACTS.CONTACT_2; // Thomas Walker
+  const testContact3 = TEST_CONTACTS.CONTACT_3; // Nancy Moore
 
   // Pattern to find templates with signatories
   const MULTI_SIGNATORY_TEMPLATE_PATTERN = /Multi.*Signatory.*Test \d+|Comprehensive Template \d+/;
@@ -276,6 +277,7 @@ ownerTest.describe('Agreement Form Signers', () => {
         signatories: [
           { contactName: testContact1 },
           { contactName: testContact2 },
+          { contactName: testContact3 },
         ],
       });
 

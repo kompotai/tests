@@ -209,7 +209,8 @@ ownerTest.describe('Agreement Creation', () => {
 
       // Verify Contact section heading and linked contact are visible
       await expect(page.getByRole('heading', { name: 'Contact' })).toBeVisible({ timeout: 10000 });
-      await expect(page.getByRole('link', { name: testContactName })).toBeVisible({ timeout: 5000 });
+      // Use specific data-testid to avoid matching both Contact and Signers sections
+      await expect(page.locator('[data-testid="agreement-contact"]').getByRole('link', { name: testContactName })).toBeVisible({ timeout: 5000 });
     });
   });
 
