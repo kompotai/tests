@@ -90,25 +90,18 @@ test.describe('Contacts', () => {
 
       const uniqueEmail = `search${Date.now()}@test.com`;
       await fillField(world.page, 'email', uniqueEmail);
-
       const uniquePhone = `${Date.now()}`.slice(-10);
-      await fillField(world.page, 'phone', uniquePhone);
-
+      await world.page.getByPlaceholder('(201) 555-0123').fill(uniquePhone);
       const contactTypeDropdown = world.page.locator('#contactType');
       await contactTypeDropdown.click();
       await world.page.getByText('Client').click();
-
       const sourceDropdown = world.page.locator('#source');
       await sourceDropdown.click();
       await world.page.getByText('Advertising').click();
-
-
       await fillField(world.page, 'company', `Company ${Date.now()}`);
       await fillField(world.page, 'position', 'Worker');
-
       await world.page.locator('textarea[name="notes"]');
       await fillField(world.page, 'notes', `Test note ${Date.now()}`);
-
       await clickButton(world.page, 'Save');
       await waitForLoading(world.page);
       await world.page.waitForTimeout(1000); // Wait for sidebar to close
