@@ -150,15 +150,41 @@ export class AgreementTemplatesPage extends BasePage {
         ? data.pdfPath
         : path.join(process.cwd(), data.pdfPath);
 
+      console.log(`[fillForm] Uploading PDF from: ${absolutePath}`);
+
       // The file input is hidden inside a label
       const fileInput = this.page.locator('input[type="file"][accept*="pdf"]').first();
       await fileInput.setInputFiles(absolutePath);
 
-      // Wait for upload to complete (uploading indicator should disappear)
-      await this.page.waitForSelector('text=Uploading', { state: 'hidden', timeout: 30000 }).catch(() => {
-        // If "Uploading" text never appeared, the upload was quick
+      // Wait for upload to complete:
+      // 1. Spinner appears (bg-blue-50 with animate-spin)
+      // 2. Spinner disappears and completed state shows (bg-zinc-50)
+      console.log('[fillForm] Waiting for upload spinner...');
+
+      // First, wait for upload to start (spinner appears) - short timeout as it should be quick
+      await this.page.locator('.animate-spin').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+        console.log('[fillForm] Upload spinner not detected - upload may be very fast or failed to start');
       });
-      await this.wait(1000);
+
+      // Then wait for spinner to disappear (upload complete)
+      console.log('[fillForm] Waiting for upload to complete...');
+      await this.page.locator('.animate-spin').waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {
+        console.log('[fillForm] Warning: spinner did not disappear within timeout');
+      });
+
+      // Verify upload completed successfully - look for the completed state indicator
+      // (bg-zinc-50 border with FileUp icon, not bg-blue-50 with spinner)
+      const uploadedIndicator = this.page.locator('.bg-zinc-50.border-zinc-200').first();
+      const isUploaded = await uploadedIndicator.isVisible().catch(() => false);
+      console.log(`[fillForm] Upload completed: ${isUploaded}`);
+
+      if (!isUploaded) {
+        // Take screenshot for debugging
+        await this.page.screenshot({ path: 'test-results/upload-failed.png' }).catch(() => {});
+        console.log('[fillForm] WARNING: PDF upload may have failed - indicator not found');
+      }
+
+      await this.wait(500);
     }
   }
 
