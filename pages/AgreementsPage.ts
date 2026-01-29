@@ -94,10 +94,10 @@ export class AgreementsPage extends BasePage {
       await this.wait(2000);
 
       // Check if multi-signer form is visible (has signer-role elements)
-      // Wait up to 30 seconds for the multi-signer form to appear (parallel tests cause slow loads)
+      // Wait up to 5 seconds for the multi-signer form to appear
       console.log(`[create] Waiting for multi-signer form...`);
-      await this.page.locator('[data-testid^="signer-role-"]').first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
-        console.log(`[create] Warning: signer-role elements not found after 30s`);
+      await this.page.locator('[data-testid^="signer-role-"]').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+        console.log(`[create] Warning: signer-role elements not found after 5s`);
       });
       const multiSignerForm = await this.page.locator('[data-testid^="signer-role-"]').count();
       console.log(`[create] Multi-signer form detected: ${multiSignerForm > 0}, signers: ${data.signatories.length}`);
@@ -424,9 +424,9 @@ export class AgreementsPage extends BasePage {
   async selectMultiSignerContact(order: number, contactName: string): Promise<void> {
     console.log(`[selectMultiSignerContact] Selecting "${contactName}" for signer order ${order}`);
 
-    // Find the signer role section - wait longer for signer as form may still be loading
+    // Find the signer role section
     const signerRole = this.page.locator(this.selectors.form.signerRole(order));
-    await signerRole.waitFor({ state: 'visible', timeout: 30000 });
+    await signerRole.waitFor({ state: 'visible', timeout: 10000 });
 
     // Find the contact input within this role
     const contactInput = this.page.locator(this.selectors.form.signerContactInput(order));

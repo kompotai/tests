@@ -20,6 +20,14 @@ import fs from 'fs';
 const TEST_PDF_PATH = path.join(__dirname, '../../../fixtures/test-agreement.pdf');
 const COORDS_PATH = path.join(__dirname, '../../../fixtures/test-agreement-coords.json');
 
+// Verify fixture files exist at import time (fail-fast if missing)
+if (!fs.existsSync(TEST_PDF_PATH)) {
+  throw new Error(`Missing fixture file: ${TEST_PDF_PATH}`);
+}
+if (!fs.existsSync(COORDS_PATH)) {
+  throw new Error(`Missing fixture file: ${COORDS_PATH}`);
+}
+
 // Field coordinate from generated JSON (absolute editor units)
 interface FieldCoord {
   name: string;

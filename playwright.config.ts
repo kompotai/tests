@@ -20,6 +20,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   // Limit workers to prevent overwhelming the remote server
   workers: process.env.CI ? 1 : 4,
+  // Stop after 5 failures to save time on CI (fail-fast)
+  maxFailures: process.env.CI ? 5 : undefined,
 
   // Reporter configuration
   reporter: [
