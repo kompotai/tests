@@ -14,6 +14,25 @@ Always respond in the same language that the developer uses to communicate with 
 
 4. **Improvements require approval**: If you see something that can be improved, first inform or ask about it. Only then, after agreement, take action.
 
+## Git Commits
+
+**Do NOT add co-author line in commits for this project.** This is a tests repository, not the main product. Commit messages should be simple without the `Co-Authored-By: Claude` footer.
+
+## GitHub Actions
+
+- **Workflow runs**: https://github.com/kompotai/tests/actions
+- **Workflow file**: `.github/workflows/e2e-stage.yml`
+
+### Triggers
+
+1. **Push to main** — when tests are updated
+2. **repository_dispatch** — triggered by kompot.ai deploy (via `trigger-tests.yml` in kompot.ai repo)
+3. **Manual** — workflow_dispatch with optional commit SHA
+
+### Note on Actor
+
+Dispatched runs show as "Andrew1326" because `TESTS_DISPATCH_TOKEN` in kompot.ai secrets is his PAT. To change the displayed actor, replace the token with another user's PAT.
+
 ## Testing Environment
 
 - Tests run **locally** or on **stage** environment only

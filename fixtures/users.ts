@@ -75,19 +75,19 @@ export const OWNER = {
     return `${WORKSPACE_ID} Owner`;
   },
   get email(): string {
-    // Tester Mode: из env var
-    if (IS_TESTER_MODE && process.env.WS_OWNER_EMAIL) {
+    // Prefer env var if set (works in both CI and Tester modes)
+    if (process.env.WS_OWNER_EMAIL) {
       return process.env.WS_OWNER_EMAIL;
     }
-    // CI Mode: генерация из WS_ID
+    // Fallback: generate from WS_ID
     return `${WORKSPACE_ID}-owner@kompot.ai`;
   },
   get password(): string {
-    // Tester Mode: из env var
-    if (IS_TESTER_MODE && process.env.WS_OWNER_PASSWORD) {
+    // Prefer env var if set (works in both CI and Tester modes)
+    if (process.env.WS_OWNER_PASSWORD) {
       return process.env.WS_OWNER_PASSWORD;
     }
-    // CI Mode: генерация из WS_ID
+    // Fallback: generate from WS_ID
     return `${WORKSPACE_ID}Owner123!`;
   },
 };

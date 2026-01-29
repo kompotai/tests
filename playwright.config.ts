@@ -1,8 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
-// Load .env and OVERRIDE existing shell env vars
-dotenv.config({ override: true });
+// Load .env as fallback (don't override Doppler/shell vars)
+dotenv.config({ override: false });
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -84,11 +84,22 @@ export default defineConfig({
     {
       name: 'contacts',
       testDir: './tests/e2e/04-contacts',
-      dependencies: ['workspace-users'],
+      dependencies: ['company-owner'],
       fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
-        storageState: '.auth/admin.json',
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 05: Agreements - Templates and Agreements CRUD
+    {
+      name: 'agreements',
+      testDir: './tests/e2e/05-agreements',
+      dependencies: ['company-owner'],
+      fullyParallel: false, // Sequential - templates before agreements
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
       },
     },
   ],

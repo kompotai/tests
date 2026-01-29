@@ -215,6 +215,18 @@ export class ContactsPage extends BasePage {
     }
 
     await this.submitForm();
+
+    // Wait for table to refresh - old name should disappear if name was changed
+    if (newData.name) {
+      await this.page.locator(`text="${identifier}"`).first()
+        .waitFor({ state: 'hidden', timeout: 10000 })
+        .catch(() => {
+          // If element doesn't disappear, wait a bit more for API refresh
+          console.log('[edit] Old name still visible, waiting for table refresh...');
+        });
+      // Additional wait for table to fully update
+      await this.wait(500);
+    }
   }
 
   async delete(identifier: string): Promise<void> {
@@ -232,20 +244,127 @@ export class ContactsPage extends BasePage {
     return this.page.locator(this.selectors.row(identifier)).first();
   }
 
+  /**
+   * Click on contact name in table to open quick view (side panel)
+   */
+  async openQuickView(identifier: string): Promise<void> {
+    const nameLink = this.page.locator(this.selectors.rowNameLink(identifier)).first();
+    await nameLink.click();
+    await this.wait(500);
+    // Wait for panel to appear
+    await this.page.locator(this.selectors.quickViewPanel).first()
+      .waitFor({ state: 'visible', timeout: 5000 });
+  }
+
+  /**
+   * Click eye icon to navigate to full page view
+   */
+  async openFullPageView(identifier: string): Promise<void> {
+    const viewButton = this.page.locator(this.selectors.rowViewButton(identifier)).first();
+    await viewButton.click();
+    await this.page.waitForURL(/\/contacts\/[a-f0-9]+/, { timeout: 10000 });
+    await this.page.waitForLoadState('networkidle');
+  }
+
   async clickRowEdit(identifier: string): Promise<void> {
-    const row = this.getRow(identifier);
-    await row.locator(this.selectors.rowEditButton).click();
+    const editBtn = this.page.locator(this.selectors.rowEditButton(identifier)).first();
+    await editBtn.click();
     await this.wait(1000);
   }
 
   async clickRowDelete(identifier: string): Promise<void> {
-    const row = this.getRow(identifier);
-    const deleteBtn = row.locator(this.selectors.rowDeleteButton).first();
+    const deleteBtn = this.page.locator(this.selectors.rowDeleteButton(identifier)).first();
 
     if (await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       await deleteBtn.click();
       await this.wait(500);
     }
+  }
+
+  // ============================================
+  // Badge Editing
+  // ============================================
+
+  /**
+   * Click on type badge in table row and select a new value
+   */
+  async editTypeBadge(identifier: string, newType: string): Promise<void> {
+    // Find badge in row - look for the 4th cell (Type column)
+    const row = this.getRow(identifier);
+    const typeBadge = row.locator('button').filter({ hasText: /type|тип|no type|нет типа/i }).first();
+    await typeBadge.click();
+    await this.wait(300);
+
+    // Select option from popover
+    const option = this.page.locator(this.selectors.badgeOption(newType)).first();
+    await option.click();
+    await this.wait(500);
+  }
+
+  /**
+   * Click on source badge in table row and select a new value
+   */
+  async editSourceBadge(identifier: string, newSource: string): Promise<void> {
+    const row = this.getRow(identifier);
+    const sourceBadge = row.locator('button').filter({ hasText: /source|источник|no source|нет источника/i }).first();
+    await sourceBadge.click();
+    await this.wait(300);
+
+    // Select option from popover
+    const option = this.page.locator(this.selectors.badgeOption(newSource)).first();
+    await option.click();
+    await this.wait(500);
+  }
+
+  /**
+   * Clear badge value
+   */
+  async clearBadge(identifier: string, badgeType: 'type' | 'source'): Promise<void> {
+    const row = this.getRow(identifier);
+    const badge = badgeType === 'type'
+      ? row.locator('button').filter({ hasText: /type|тип/i }).first()
+      : row.locator('button').filter({ hasText: /source|источник/i }).first();
+
+    await badge.click();
+    await this.wait(300);
+
+    const clearBtn = this.page.locator(this.selectors.badgeClear).first();
+    if (await clearBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await clearBtn.click();
+      await this.wait(500);
+    }
+  }
+
+  // ============================================
+  // Quick View Panel
+  // ============================================
+
+  async closeQuickView(): Promise<void> {
+    // Click backdrop or press Escape
+    await this.page.keyboard.press('Escape');
+    await this.wait(300);
+  }
+
+  async isQuickViewVisible(): Promise<boolean> {
+    return await this.page.locator(this.selectors.quickViewPanel).first()
+      .isVisible({ timeout: 2000 })
+      .catch(() => false);
+  }
+
+  // ============================================
+  // Detail Page
+  // ============================================
+
+  async getDetailName(): Promise<string> {
+    return await this.page.locator(this.selectors.detailName).first()
+      .textContent()
+      .then(text => text?.trim() || '')
+      .catch(() => '');
+  }
+
+  async clickDetailEdit(): Promise<void> {
+    await this.page.locator(this.selectors.detailEditButton).first().click();
+    await this.wait(500);
   }
 
   // ============================================
@@ -280,5 +399,96 @@ export class ContactsPage extends BasePage {
     return await this.page.locator(this.selectors.form.name).first()
       .inputValue()
       .catch(() => '');
+  }
+
+  // ============================================
+  // Table Row Assertions
+  // ============================================
+
+  /**
+   * Check that a row contains specific text values
+   */
+  async shouldRowContain(identifier: string, expectedValues: {
+    email?: string;
+    phone?: string;
+    company?: string;
+    type?: string;
+    source?: string;
+  }): Promise<void> {
+    const row = this.getRow(identifier);
+
+    if (expectedValues.email) {
+      await expect(row.getByText(expectedValues.email).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.phone) {
+      await expect(row.getByText(expectedValues.phone).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.company) {
+      await expect(row.getByText(expectedValues.company).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.type) {
+      await expect(row.getByText(expectedValues.type).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.source) {
+      await expect(row.getByText(expectedValues.source).first()).toBeVisible({ timeout: 5000 });
+    }
+  }
+
+  /**
+   * Check badge value in row
+   */
+  async shouldBadgeHaveValue(identifier: string, badgeType: 'type' | 'source', expectedValue: string): Promise<void> {
+    const row = this.getRow(identifier);
+    const badge = badgeType === 'type'
+      ? row.locator('button').filter({ hasText: new RegExp(expectedValue, 'i') }).first()
+      : row.locator('button').filter({ hasText: new RegExp(expectedValue, 'i') }).first();
+
+    await expect(badge).toBeVisible({ timeout: 5000 });
+  }
+
+  // ============================================
+  // Quick View / Detail Page Assertions
+  // ============================================
+
+  async shouldQuickViewContain(expectedValues: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    company?: string;
+  }): Promise<void> {
+    const panel = this.page.locator(this.selectors.quickViewPanel).first();
+
+    if (expectedValues.name) {
+      await expect(panel.getByText(expectedValues.name).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.email) {
+      await expect(panel.getByText(expectedValues.email).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.phone) {
+      await expect(panel.getByText(expectedValues.phone).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.company) {
+      await expect(panel.getByText(expectedValues.company).first()).toBeVisible({ timeout: 5000 });
+    }
+  }
+
+  async shouldDetailPageContain(expectedValues: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    company?: string;
+  }): Promise<void> {
+    if (expectedValues.name) {
+      await expect(this.page.getByText(expectedValues.name).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.email) {
+      await expect(this.page.getByText(expectedValues.email).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.phone) {
+      await expect(this.page.getByText(expectedValues.phone).first()).toBeVisible({ timeout: 5000 });
+    }
+    if (expectedValues.company) {
+      await expect(this.page.getByText(expectedValues.company).first()).toBeVisible({ timeout: 5000 });
+    }
   }
 }
