@@ -101,7 +101,26 @@ export class ContactsPage extends BasePage {
         }
         const phoneField = this.page.locator(this.selectors.form.phone(i)).first();
         if (await phoneField.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await phoneField.fill(data.phones[i]);
+          // For react-international-phone: select country first, then enter local number
+          const phone = data.phones[i];
+          const countrySelect = this.page.locator('.phone-input-country select').first();
+          if (phone.startsWith('+7') && phone.length > 3) {
+            // Russian number: select Russia, enter local part
+            await countrySelect.selectOption('ru');
+            await this.wait(200);
+            const localPart = phone.slice(2); // Remove +7 prefix
+            // Use click + pressSequentially to avoid fill() resetting React state
+            await phoneField.click();
+            await phoneField.pressSequentially(localPart, { delay: 30 });
+          } else if (phone.startsWith('+1') && phone.length > 3) {
+            // US number: already default, enter local part
+            await phoneField.click();
+            await phoneField.pressSequentially(phone.slice(2), { delay: 30 });
+          } else {
+            // Other formats: try direct fill
+            await phoneField.fill(phone);
+          }
+          await this.wait(200);
         }
       }
     }
