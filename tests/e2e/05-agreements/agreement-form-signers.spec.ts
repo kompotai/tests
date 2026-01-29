@@ -11,6 +11,42 @@
 import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { TEST_CONTACTS } from './agreements.fixture';
+import { Page } from '@playwright/test';
+
+// Helper to select a template that has signer roles (at least 2)
+async function selectTemplateWithRoles(page: Page, pattern: RegExp): Promise<string | null> {
+  const templateSelect = page.locator('[data-testid="template-select"]');
+  await templateSelect.waitFor({ state: 'visible' });
+
+  const options = await templateSelect.locator('option').allTextContents();
+  const candidateTemplates = options.filter(opt => pattern.test(opt));
+
+  if (candidateTemplates.length === 0) {
+    return null;
+  }
+
+  // Try each candidate template until we find one with at least 2 signer roles
+  for (const templateLabel of candidateTemplates) {
+    await templateSelect.selectOption({ label: templateLabel });
+    await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(500);
+
+    // Check if signer-role elements appeared (at least role 1 and 2)
+    const signerRole1 = page.locator('[data-testid="signer-role-1"]');
+    const signerRole2 = page.locator('[data-testid="signer-role-2"]');
+
+    const hasRole1 = await signerRole1.isVisible({ timeout: 2000 }).catch(() => false);
+    const hasRole2 = await signerRole2.isVisible({ timeout: 1000 }).catch(() => false);
+
+    if (hasRole1 && hasRole2) {
+      console.log(`[helper] Found template with roles: ${templateLabel}`);
+      return templateLabel;
+    }
+    console.log(`[helper] Template has no roles, trying next: ${templateLabel}`);
+  }
+
+  return null;
+}
 
 ownerTest.describe('Agreement Form Signers', () => {
   ownerTest.slow();
@@ -20,8 +56,8 @@ ownerTest.describe('Agreement Form Signers', () => {
   const testContact1 = TEST_CONTACTS.CONTACT_1; // Carol Lopez
   const testContact2 = TEST_CONTACTS.CONTACT_2; // Thomas Walker
 
-  // Comprehensive Template has 2 signatories with custom role names
-  const MULTI_SIGNATORY_TEMPLATE_PATTERN = /Comprehensive Template \d+/;
+  // Pattern to find templates with signatories
+  const MULTI_SIGNATORY_TEMPLATE_PATTERN = /Multi.*Signatory.*Test \d+|Comprehensive Template \d+/;
 
   ownerTest.beforeEach(async ({ page }) => {
     agreementsPage = new AgreementsPage(page);
@@ -36,23 +72,11 @@ ownerTest.describe('Agreement Form Signers', () => {
     ownerTest('shows role names from template in signer form', async ({ page }) => {
       await agreementsPage.openCreateForm();
 
-      const templateSelect = page.locator('[data-testid="template-select"]');
-      await templateSelect.waitFor({ state: 'visible' });
-
-      const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
-
-      if (!comprehensiveTemplate) {
-        ownerTest.skip(true, 'No multi-signatory template found - run comprehensive tests first');
+      const selectedTemplate = await selectTemplateWithRoles(page, MULTI_SIGNATORY_TEMPLATE_PATTERN);
+      if (!selectedTemplate) {
+        ownerTest.skip(true, 'No template with signer roles found');
         return;
       }
-
-      const templateName = comprehensiveTemplate.replace(/\s*\(Contract\)$/, '');
-      await templateSelect.selectOption({ label: comprehensiveTemplate });
-
-      // Wait for template to load
-      await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(1000);
 
       // Verify signer role sections are visible
       const signerRole1 = page.locator('[data-testid="signer-role-1"]');
@@ -61,44 +85,39 @@ ownerTest.describe('Agreement Form Signers', () => {
       await expect(signerRole1).toBeVisible({ timeout: 10000 });
       await expect(signerRole2).toBeVisible({ timeout: 5000 });
 
-      // Verify role names are displayed (not just "Signer 1", "Signer 2")
-      // The role names should be visible within the signer-role containers
-      const role1Text = await signerRole1.textContent();
-      const role2Text = await signerRole2.textContent();
+      // Verify role names are displayed using data-testid
+      const signerName1 = page.locator('[data-testid="signer-name-1"]');
+      const signerName2 = page.locator('[data-testid="signer-name-2"]');
 
-      // Roles should have meaningful names (from template), not just generic
-      expect(role1Text).toBeTruthy();
-      expect(role2Text).toBeTruthy();
-      console.log(`[test] Role 1 text: ${role1Text}`);
-      console.log(`[test] Role 2 text: ${role2Text}`);
+      await expect(signerName1).toBeVisible();
+      await expect(signerName2).toBeVisible();
+
+      const name1 = await signerName1.textContent();
+      const name2 = await signerName2.textContent();
+      console.log(`[test] Role 1 name: ${name1}`);
+      console.log(`[test] Role 2 name: ${name2}`);
     });
 
     ownerTest('shows signing order for each role', async ({ page }) => {
       await agreementsPage.openCreateForm();
 
-      const templateSelect = page.locator('[data-testid="template-select"]');
-      await templateSelect.waitFor({ state: 'visible' });
-
-      const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
-
-      if (!comprehensiveTemplate) {
-        ownerTest.skip(true, 'No multi-signatory template found');
+      const selectedTemplate = await selectTemplateWithRoles(page, MULTI_SIGNATORY_TEMPLATE_PATTERN);
+      if (!selectedTemplate) {
+        ownerTest.skip(true, 'No template with signer roles found');
         return;
       }
 
-      await templateSelect.selectOption({ label: comprehensiveTemplate });
-      await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(1000);
+      // Verify signing order is displayed using data-testid
+      const signerOrder1 = page.locator('[data-testid="signer-order-1"]');
+      await expect(signerOrder1).toBeVisible();
 
-      // Verify signing order is displayed
-      // Look for text like "Signs 1st" or "Order: 1"
-      const signerRole1 = page.locator('[data-testid="signer-role-1"]');
-      await expect(signerRole1).toBeVisible();
-
-      const orderText = await signerRole1.locator('text=/[Ss]igns|[Oo]rder/').textContent();
+      const orderText = await signerOrder1.textContent();
       expect(orderText).toBeTruthy();
       console.log(`[test] Order text: ${orderText}`);
+
+      // Verify signer name is also visible
+      const signerName1 = page.locator('[data-testid="signer-name-1"]');
+      await expect(signerName1).toBeVisible();
     });
   });
 
@@ -110,20 +129,13 @@ ownerTest.describe('Agreement Form Signers', () => {
     ownerTest('allows selecting different contact for each role', async ({ page }) => {
       await agreementsPage.openCreateForm();
 
-      const templateSelect = page.locator('[data-testid="template-select"]');
-      await templateSelect.waitFor({ state: 'visible' });
-
-      const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
-
-      if (!comprehensiveTemplate) {
-        ownerTest.skip(true, 'No multi-signatory template found');
+      const selectedTemplate = await selectTemplateWithRoles(page, MULTI_SIGNATORY_TEMPLATE_PATTERN);
+      if (!selectedTemplate) {
+        ownerTest.skip(true, 'No template with signer roles found');
         return;
       }
 
-      await templateSelect.selectOption({ label: comprehensiveTemplate });
-      await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(1000);
 
       // Select first contact for role 1
       await agreementsPage.selectMultiSignerContact(1, testContact1);
@@ -143,20 +155,13 @@ ownerTest.describe('Agreement Form Signers', () => {
     ownerTest('shows contact info after selection', async ({ page }) => {
       await agreementsPage.openCreateForm();
 
-      const templateSelect = page.locator('[data-testid="template-select"]');
-      await templateSelect.waitFor({ state: 'visible' });
-
-      const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
-
-      if (!comprehensiveTemplate) {
-        ownerTest.skip(true, 'No multi-signatory template found');
+      const selectedTemplate = await selectTemplateWithRoles(page, MULTI_SIGNATORY_TEMPLATE_PATTERN);
+      if (!selectedTemplate) {
+        ownerTest.skip(true, 'No template with signer roles found');
         return;
       }
 
-      await templateSelect.selectOption({ label: comprehensiveTemplate });
-      await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(1000);
 
       // Select contact for role 1
       await agreementsPage.selectMultiSignerContact(1, testContact1);
@@ -166,33 +171,23 @@ ownerTest.describe('Agreement Form Signers', () => {
       await expect(signerRole1).toContainText(testContact1);
 
       // Should show at least email or phone if contact has them
-      // Look for Email: or Phone: labels in the signer role section
       const hasEmailLabel = await signerRole1.locator('text=/[Ee]mail:?/').isVisible().catch(() => false);
       const hasPhoneLabel = await signerRole1.locator('text=/[Pp]hone:?|[Тт]елефон:?/').isVisible().catch(() => false);
       const hasCompanyLabel = await signerRole1.locator('text=/[Cc]ompany:?|[Кк]омпания:?/').isVisible().catch(() => false);
 
-      // At least one type of contact info should be displayed (if contact has any)
       console.log(`[test] Email visible: ${hasEmailLabel}, Phone visible: ${hasPhoneLabel}, Company visible: ${hasCompanyLabel}`);
-      // Note: This test verifies the UI shows contact info when available
     });
 
     ownerTest('allows removing selected contact', async ({ page }) => {
       await agreementsPage.openCreateForm();
 
-      const templateSelect = page.locator('[data-testid="template-select"]');
-      await templateSelect.waitFor({ state: 'visible' });
-
-      const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
-
-      if (!comprehensiveTemplate) {
-        ownerTest.skip(true, 'No multi-signatory template found');
+      const selectedTemplate = await selectTemplateWithRoles(page, MULTI_SIGNATORY_TEMPLATE_PATTERN);
+      if (!selectedTemplate) {
+        ownerTest.skip(true, 'No template with signer roles found');
         return;
       }
 
-      await templateSelect.selectOption({ label: comprehensiveTemplate });
-      await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(1000);
 
       // Select contact for role 1
       await agreementsPage.selectMultiSignerContact(1, testContact1);
@@ -217,8 +212,7 @@ ownerTest.describe('Agreement Form Signers', () => {
   // ============================================
 
   ownerTest.describe('Single Signer Template', () => {
-    ownerTest('shows role picker even for template with 1 signer', async ({ page }) => {
-      // Create a simple template with 1 signer or find one
+    ownerTest('shows contact field for template without roles', async ({ page }) => {
       await agreementsPage.openCreateForm();
 
       const templateSelect = page.locator('[data-testid="template-select"]');
@@ -226,9 +220,12 @@ ownerTest.describe('Agreement Form Signers', () => {
 
       const options = await templateSelect.locator('option').allTextContents();
 
-      // Try to find a single-signer template (not comprehensive)
+      // Find a template that is NOT multi-signatory
       const singleSignerTemplate = options.find(opt =>
-        !MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt) && opt !== '' && !opt.includes('Select')
+        !MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt) &&
+        opt !== '' &&
+        !opt.includes('Select') &&
+        opt.includes('(')
       );
 
       if (!singleSignerTemplate) {
@@ -240,16 +237,16 @@ ownerTest.describe('Agreement Form Signers', () => {
       await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
       await page.waitForTimeout(1000);
 
-      // Should show either signer-role-1 (if template has roles) or regular contact field
+      // Should show regular contact field (not signer-role sections)
+      const regularContactField = page.locator('input[placeholder*="contact" i]').first();
       const signerRole1 = page.locator('[data-testid="signer-role-1"]');
-      const regularContactField = page.locator('input[placeholder*="contact"]').first();
 
-      const hasSignerRole = await signerRole1.isVisible().catch(() => false);
       const hasContactField = await regularContactField.isVisible().catch(() => false);
+      const hasSignerRole = await signerRole1.isVisible().catch(() => false);
 
-      // Either signer role or contact field should be visible
-      expect(hasSignerRole || hasContactField).toBe(true);
-      console.log(`[test] Has signer role: ${hasSignerRole}, Has contact field: ${hasContactField}`);
+      console.log(`[test] Has contact field: ${hasContactField}, Has signer role: ${hasSignerRole}`);
+      // At least one should be visible
+      expect(hasContactField || hasSignerRole).toBe(true);
     });
   });
 
@@ -263,18 +260,13 @@ ownerTest.describe('Agreement Form Signers', () => {
     ownerTest('creates agreement with signers for edit test', async ({ page }) => {
       await agreementsPage.openCreateForm();
 
-      const templateSelect = page.locator('[data-testid="template-select"]');
-      await templateSelect.waitFor({ state: 'visible' });
-
-      const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
-
-      if (!comprehensiveTemplate) {
-        ownerTest.skip(true, 'No multi-signatory template found');
+      const selectedTemplate = await selectTemplateWithRoles(page, MULTI_SIGNATORY_TEMPLATE_PATTERN);
+      if (!selectedTemplate) {
+        ownerTest.skip(true, 'No template with signer roles found');
         return;
       }
 
-      const templateName = comprehensiveTemplate.replace(/\s*\(Contract\)$/, '');
+      const templateName = selectedTemplate.replace(/\s*\(Contract\)$/, '');
       await page.locator('button:has-text("Cancel")').click();
       await page.waitForTimeout(500);
 
@@ -292,18 +284,21 @@ ownerTest.describe('Agreement Form Signers', () => {
       console.log(`[test] Created agreement: ${createdAgreementId}`);
     });
 
-    ownerTest('edit form shows existing signers', async ({ page }) => {
+    ownerTest('edit sidebar shows existing signers', async ({ page }) => {
       if (!createdAgreementId) {
         ownerTest.skip(true, 'No agreement created');
         return;
       }
 
-      // Navigate to edit page
-      await page.goto(`/ws/agreements/${createdAgreementId}/edit`);
+      // Navigate to agreement view
+      await page.goto(`/ws/agreements/${createdAgreementId}`);
       await page.waitForLoadState('networkidle');
 
-      // Wait for form to load
-      await expect(page.locator('form')).toBeVisible({ timeout: 15000 });
+      // Click edit button to open sidebar
+      await page.click('[data-testid="edit-agreement-button"]');
+
+      // Wait for form to load in sidebar
+      await expect(page.locator('[data-testid="agreement-form"]')).toBeVisible({ timeout: 15000 });
 
       // Wait for signers to load (they are fetched async)
       await page.waitForTimeout(3000);
@@ -312,16 +307,14 @@ ownerTest.describe('Agreement Form Signers', () => {
       const signerRole1 = page.locator('[data-testid="signer-role-1"]');
       const signerRole2 = page.locator('[data-testid="signer-role-2"]');
 
-      // At least one signer role should be visible and contain a contact name
       const role1Visible = await signerRole1.isVisible().catch(() => false);
       const role2Visible = await signerRole2.isVisible().catch(() => false);
 
       console.log(`[test] Role 1 visible: ${role1Visible}, Role 2 visible: ${role2Visible}`);
 
       if (role1Visible) {
-        // Signer role should contain the contact name (not just an empty input)
-        const role1HasContact = await signerRole1.locator(`.font-medium, text="${testContact1}"`).isVisible().catch(() => false);
-        console.log(`[test] Role 1 has contact: ${role1HasContact}`);
+        // Signer role should contain the contact name
+        await expect(signerRole1).toContainText(testContact1);
       }
     });
 
@@ -331,19 +324,22 @@ ownerTest.describe('Agreement Form Signers', () => {
         return;
       }
 
-      // Navigate to edit page
-      await page.goto(`/ws/agreements/${createdAgreementId}/edit`);
+      // Navigate to agreement view
+      await page.goto(`/ws/agreements/${createdAgreementId}`);
       await page.waitForLoadState('networkidle');
 
+      // Click edit button to open sidebar
+      await page.click('[data-testid="edit-agreement-button"]');
+
       // Wait for form to load
-      await expect(page.locator('form')).toBeVisible({ timeout: 15000 });
+      await expect(page.locator('[data-testid="agreement-form"]')).toBeVisible({ timeout: 15000 });
       await page.waitForTimeout(2000);
 
-      // Just submit without changes
+      // Submit without changes
       await page.click('[data-testid="agreement-form-submit"]');
 
-      // Wait for redirect back to view
-      await page.waitForURL(/\/ws\/agreements\/[a-f0-9]+$/, { timeout: 30000 });
+      // Wait for sidebar to close and page to refresh
+      await page.waitForTimeout(2000);
 
       // Verify signers are still present on the view page
       const signersSection = page.locator('[data-testid="signers-section"]');

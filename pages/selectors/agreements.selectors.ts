@@ -26,9 +26,14 @@ export const AgreementsSelectors = {
     contactOption: (name: string) => `button:has-text("${name}"), [role="option"]:has-text("${name}")`,
     // Multi-signer contact selectors
     signerRole: (order: number) => `[data-testid="signer-role-${order}"]`,
+    signerName: (order: number) => `[data-testid="signer-name-${order}"]`,
+    signerOrder: (order: number) => `[data-testid="signer-order-${order}"]`,
     signerContactInput: (order: number) => `[data-testid="signer-contact-input-${order}"]`,
     signerContactDropdown: (order: number) => `[data-testid="signer-contact-dropdown-${order}"]`,
     signerContactOption: (name: string) => `[data-testid="signer-contact-option-${name.replace(/\s+/g, '-')}"]`,
+    // Document fields
+    documentFieldsSection: '[data-testid="document-fields-section"]',
+    documentField: (fieldId: string) => `[data-testid="document-field-${fieldId}"]`,
     // Legacy single contact
     signatoryContact: (index: number) => `[data-testid="signatory-${index}-contact"], input[placeholder*="Select contact"]`,
     submit: '[data-testid="agreement-form-submit"]',
