@@ -9,22 +9,62 @@
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { AgreementsPage } from '@pages/AgreementsPage';
-import { TEST_CONTACTS } from './agreements.fixture';
+import { createTestContacts, cleanupTestContacts } from './helpers';
 
 ownerTest.describe('Agreement Creation', () => {
   // Set longer timeout for all tests in this suite
   ownerTest.slow();
 
   let agreementsPage: AgreementsPage;
-
-  // Use contacts from the fixture (these exist in megatest workspace)
-  const testContactName = TEST_CONTACTS.CONTACT_1;
-  const secondContactName = TEST_CONTACTS.CONTACT_2;
-  const thirdContactName = TEST_CONTACTS.CONTACT_3;
+  
+  // Store created contact names
+  let testContactName: string;
+  let secondContactName: string;
+  let thirdContactName: string;
 
   // Use patterns to find templates - comprehensive test creates these
   // Comprehensive Template has exactly 2 signatories
   const MULTI_SIGNATORY_TEMPLATE_PATTERN = /Comprehensive Template \d+/;
+
+  // Create test contacts before all tests
+  ownerTest.beforeAll(async ({ browser }) => {
+    const context = await browser.newContext({
+      storageState: '.auth/owner.json',
+    });
+    const page = await context.newPage();
+    
+    console.log('Creating test contacts for agreement tests...');
+    const contacts = await createTestContacts(page);
+    
+    testContactName = contacts.contact1;
+    secondContactName = contacts.contact2;
+    thirdContactName = contacts.contact3;
+    
+    console.log('Test contacts created:', {
+      contact1: testContactName,
+      contact2: secondContactName,
+      contact3: thirdContactName,
+    });
+    
+    await context.close();
+  });
+
+  // Cleanup after all tests
+  ownerTest.afterAll(async ({ browser }) => {
+    const context = await browser.newContext({
+      storageState: '.auth/owner.json',
+    });
+    const page = await context.newPage();
+    
+    console.log('Cleaning up test contacts...');
+    await cleanupTestContacts(page, [
+      testContactName,
+      secondContactName,
+      thirdContactName,
+    ]);
+    
+    await context.close();
+  });
 
   ownerTest.beforeEach(async ({ page }) => {
     agreementsPage = new AgreementsPage(page);

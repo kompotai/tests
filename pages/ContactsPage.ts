@@ -66,10 +66,11 @@ export class ContactsPage extends BasePage {
     await this.wait(500);
   }
 
-  async create(data: ContactData): Promise<void> {
+  async create(data: ContactData): Promise<{ name: string }> {
     await this.openCreateForm();
     await this.fillForm(data);
     await this.submitForm();
+    return { name: data.name };
   }
 
   async fillForm(data: ContactData): Promise<void> {
