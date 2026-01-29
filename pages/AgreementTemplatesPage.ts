@@ -292,7 +292,11 @@ export class AgreementTemplatesPage extends BasePage {
     await this.wait(500);
 
     // Find the PDF viewer container (div that wraps the canvas)
-    const pdfContainer = this.page.locator('.relative.mx-auto.shadow-lg').first();
+    // Try both old and new selectors for compatibility
+    let pdfContainer = this.page.locator('.relative.shadow-lg.bg-white').first();
+    if (!(await pdfContainer.isVisible({ timeout: 1000 }).catch(() => false))) {
+      pdfContainer = this.page.locator('.relative.mx-auto.shadow-lg').first();
+    }
     const containerBox = await pdfContainer.boundingBox();
     if (!containerBox) {
       throw new Error('Could not find PDF container');
