@@ -104,6 +104,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 06: Welcome - Dashboard page navigation
+    {
+      name: 'welcome',
+      testDir: './tests/e2e/06-welcome',
+      dependencies: ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests

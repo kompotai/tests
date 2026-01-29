@@ -9,3 +9,4 @@ export { ContactsPage, type ContactData } from './ContactsPage';
 export { OpportunitiesPage, type OpportunityData } from './OpportunitiesPage';
 export { AgreementsPage, type AgreementData, type SignatoryData } from './AgreementsPage';
 export { AgreementTemplatesPage, type TemplateData, type TemplateFieldData } from './AgreementTemplatesPage';
+export { WelcomePage } from './WelcomePage';
