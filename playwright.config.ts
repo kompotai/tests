@@ -115,6 +115,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 09: Projects - project management and related entities
+    {
+      name: 'projects',
+      testDir: './tests/e2e/09-projects',
+      dependencies: ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',
