@@ -115,6 +115,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // Regression: Bug fixes and regression tests
+    {
+      name: 'regression',
+      testDir: './tests/e2e/regression',
+      dependencies: ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
