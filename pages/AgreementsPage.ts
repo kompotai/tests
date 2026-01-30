@@ -235,11 +235,43 @@ export class AgreementsPage extends BasePage {
   }
 
   async submitForm(): Promise<void> {
+    console.log('[submitForm] Starting form submission...');
+
+    // Check for any validation errors before submitting
+    const errorBanner = this.page.locator('.bg-red-50, [role="alert"]').first();
+    const hasError = await errorBanner.isVisible({ timeout: 500 }).catch(() => false);
+    if (hasError) {
+      const errorText = await errorBanner.textContent();
+      console.log(`[submitForm] Form has error: ${errorText}`);
+    }
+
+    // Find and click submit button
     const submitButton = this.page.locator(this.selectors.form.submit);
     await submitButton.scrollIntoViewIfNeeded();
+
+    // Check if button is enabled
+    const isDisabled = await submitButton.isDisabled();
+    console.log(`[submitForm] Submit button disabled: ${isDisabled}`);
+
     await submitButton.click({ force: true });
+    console.log('[submitForm] Clicked submit button');
+
+    // Wait a moment for any error messages to appear
+    await this.wait(1000);
+
+    // Check for validation errors after submission
+    const postSubmitError = await this.page.locator('.bg-red-50, [role="alert"]').first()
+      .textContent({ timeout: 2000 })
+      .catch(() => null);
+
+    if (postSubmitError) {
+      console.log(`[submitForm] Post-submit error: ${postSubmitError}`);
+    }
+
     // Wait for redirect to agreement view page (longer timeout for parallel tests)
+    console.log('[submitForm] Waiting for URL redirect...');
     await this.page.waitForURL(/\/agreements\/[a-f0-9]+/, { timeout: 45000 });
+    console.log(`[submitForm] Redirected to: ${this.page.url()}`);
     await this.waitForPageLoad();
   }
 
@@ -391,26 +423,121 @@ export class AgreementsPage extends BasePage {
 
   async waitForPdfToLoad(): Promise<boolean> {
     // Wait for PDF to fully load (canvas visible, no error)
-    try {
-      // First check for error
-      const error = await this.getPdfError();
-      if (error) {
-        console.log(`[waitForPdfToLoad] PDF error: ${error}`);
-        return false;
+    const maxAttempts = 5;
+    const attemptDelay = 3000;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        console.log(`[waitForPdfToLoad] Attempt ${attempt}/${maxAttempts}`);
+
+        // Check for error
+        const error = await this.getPdfError();
+        if (error) {
+          console.log(`[waitForPdfToLoad] PDF error: ${error}`);
+          return false;
+        }
+
+        // Check if still in loading state
+        const loadingText = await this.page.locator('[data-testid="document-preview"]').locator('text=Loading').isVisible({ timeout: 1000 }).catch(() => false);
+        if (loadingText) {
+          console.log(`[waitForPdfToLoad] Still loading document, waiting...`);
+          await this.wait(attemptDelay);
+          continue;
+        }
+
+        // Check for PDF.js loading state
+        const pdfLoadingText = await this.page.locator('text=Loading PDF').isVisible({ timeout: 1000 }).catch(() => false);
+        if (pdfLoadingText) {
+          console.log(`[waitForPdfToLoad] PDF.js loading, waiting...`);
+          await this.wait(attemptDelay);
+          continue;
+        }
+
+        // Wait for canvas with longer timeout - try multiple selectors
+        // The canvas might be inside nested containers
+        const canvasSelectors = [
+          '[data-testid="document-preview"] canvas',
+          '[data-testid="document-preview"] [data-page] canvas',
+          '[data-testid="document-preview"] .shadow-lg canvas',
+        ];
+
+        let canvas = null;
+        let canvasVisible = false;
+
+        for (const selector of canvasSelectors) {
+          const canvasElement = this.page.locator(selector).first();
+          canvasVisible = await canvasElement.isVisible({ timeout: 2000 }).catch(() => false);
+          if (canvasVisible) {
+            canvas = canvasElement;
+            console.log(`[waitForPdfToLoad] Found canvas with selector: ${selector}`);
+            break;
+          }
+        }
+
+        if (!canvasVisible) {
+          console.log(`[waitForPdfToLoad] Canvas not visible yet`);
+          // Check DOM structure for debugging
+          const pageCount = await this.page.locator('[data-testid="document-preview"] [data-page]').count().catch(() => 0);
+          const canvasCount = await this.page.locator('[data-testid="document-preview"] canvas').count().catch(() => 0);
+          console.log(`[waitForPdfToLoad] Pages found: ${pageCount}, Canvases found: ${canvasCount}`);
+
+          // Check first canvas dimensions and visibility state
+          if (canvasCount > 0) {
+            const firstCanvas = this.page.locator('[data-testid="document-preview"] canvas').first();
+            const bbox = await firstCanvas.boundingBox().catch(() => null);
+            const isAttached = await firstCanvas.isEnabled().catch(() => false);
+            console.log(`[waitForPdfToLoad] First canvas - bbox: ${JSON.stringify(bbox)}, attached: ${isAttached}`);
+
+            // Check if canvas might be visible with different method
+            const canvasEvaluate = await this.page.evaluate(() => {
+              const preview = document.querySelector('[data-testid="document-preview"]');
+              const canvases = preview?.querySelectorAll('canvas');
+              if (!canvases || canvases.length === 0) return { found: false };
+              const first = canvases[0];
+              const rect = first.getBoundingClientRect();
+              const style = window.getComputedStyle(first);
+              return {
+                found: true,
+                count: canvases.length,
+                width: rect.width,
+                height: rect.height,
+                display: style.display,
+                visibility: style.visibility,
+                opacity: style.opacity,
+                canvasWidth: first.width,
+                canvasHeight: first.height,
+              };
+            }).catch(() => ({ found: false, error: 'evaluate failed' }));
+            console.log(`[waitForPdfToLoad] Canvas evaluate: ${JSON.stringify(canvasEvaluate)}`);
+          }
+
+          const previewContent = await this.page.locator('[data-testid="document-preview"]').textContent({ timeout: 1000 }).catch(() => 'no content');
+          console.log(`[waitForPdfToLoad] Preview content: ${previewContent?.substring(0, 100)}`);
+          await this.wait(attemptDelay);
+          continue;
+        }
+
+        // Canvas is visible, check if rendered with content
+        if (canvas) {
+          const box = await canvas.boundingBox();
+          if (box && box.width > 200 && box.height > 200) {
+            console.log(`[waitForPdfToLoad] PDF rendered successfully (${box.width}x${box.height})`);
+            return true;
+          }
+
+          console.log(`[waitForPdfToLoad] Canvas too small: ${box?.width}x${box?.height}`);
+        }
+        await this.wait(attemptDelay);
+      } catch (e) {
+        console.log(`[waitForPdfToLoad] Attempt ${attempt} error: ${e}`);
+        if (attempt < maxAttempts) {
+          await this.wait(attemptDelay);
+        }
       }
-
-      // Wait for canvas
-      const canvas = this.page.locator('[data-testid="document-preview"] canvas');
-      await canvas.waitFor({ state: 'visible', timeout: 15000 });
-
-      // Verify canvas has content
-      const rendered = await this.isPdfRendered();
-      console.log(`[waitForPdfToLoad] PDF rendered: ${rendered}`);
-      return rendered;
-    } catch (e) {
-      console.log(`[waitForPdfToLoad] Failed: ${e}`);
-      return false;
     }
+
+    console.log(`[waitForPdfToLoad] Failed after ${maxAttempts} attempts`);
+    return false;
   }
 
   async shouldSeeStatus(status: string): Promise<void> {

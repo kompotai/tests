@@ -39,6 +39,40 @@ Dispatched runs show as "Andrew1326" because `TESTS_DISPATCH_TOKEN` in kompot.ai
 - **NEVER** run tests against production: `kompot.ai`
 - E2E tests verify possible user scenarios
 
+## Timeouts and Waits
+
+**ЗАПРЕЩЕНО использовать:**
+
+| Запрещено | Почему |
+|-----------|--------|
+| `test.setTimeout(120000)` | Увеличение таймаута теста — признак плохого дизайна |
+| `page.waitForTimeout(3000)` | Жёсткие паузы делают тесты медленными и нестабильными |
+| Любые таймауты > 10 секунд | Если требуется больше — проблема в тесте или приложении |
+
+**Вместо этого использовать:**
+
+```typescript
+// ❌ Плохо
+await page.waitForTimeout(3000);
+
+// ✅ Хорошо — ждём конкретное условие
+await element.waitFor({ state: 'visible', timeout: 10000 });
+await page.locator('text=Success').waitFor({ state: 'visible' });
+
+// ❌ Плохо
+test.setTimeout(120000);
+
+// ✅ Хорошо — если тест долгий, разбить на несколько
+test('part 1: setup', async () => { ... });
+test('part 2: verify', async () => { ... });
+```
+
+**Принципы:**
+- Используй `waitFor()` с конкретными условиями
+- Стандартный таймаут `10000ms` достаточен для большинства операций
+- Если элемент не появляется за 10 секунд — проблема в приложении, а не в тесте
+- Длинные тесты разбивай на части с `describe` блоками
+
 ## Project Overview
 
 This is an E2E test framework for the Kompot business platform using Playwright.
