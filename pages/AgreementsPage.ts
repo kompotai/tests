@@ -185,14 +185,13 @@ export class AgreementsPage extends BasePage {
     await input.click();
     await this.wait(300);
 
-    // Type to search
-    await input.fill('');
-    await input.pressSequentially(contactName, { delay: 30 });
-    console.log(`[selectSignatoryContact] Typed contact name, waiting for dropdown...`);
+    // Type to search - use fill() for faster input
+    await input.fill(contactName);
+    console.log(`[selectSignatoryContact] Filled contact name, waiting for search results...`);
 
-    // Wait for dropdown container with results
+    // Wait for dropdown option with the specific contact (handles debounce + API delay)
     const dropdown = this.page.locator('.absolute.z-10 button, div[class*="absolute"] button').filter({ hasText: contactName }).first();
-    await dropdown.waitFor({ state: 'visible', timeout: 10000 });
+    await dropdown.waitFor({ state: 'visible', timeout: 15000 });
     console.log(`[selectSignatoryContact] Dropdown option visible`);
 
     // Log dropdown structure for debugging
@@ -217,14 +216,13 @@ export class AgreementsPage extends BasePage {
     await searchInput.click();
     await this.wait(300);
 
-    // Type to search
-    await searchInput.fill('');
-    await searchInput.pressSequentially(contactName, { delay: 30 });
-    console.log(`[searchAndSelectContact] Typed "${contactName}", waiting for dropdown...`);
+    // Type to search - use fill() for faster input
+    await searchInput.fill(contactName);
+    console.log(`[searchAndSelectContact] Filled "${contactName}", waiting for search results...`);
 
-    // Wait for dropdown container with results
+    // Wait for dropdown option with the specific contact (handles debounce + API delay)
     const dropdown = this.page.locator('.absolute.z-10 button').filter({ hasText: contactName }).first();
-    await dropdown.waitFor({ state: 'visible', timeout: 10000 });
+    await dropdown.waitFor({ state: 'visible', timeout: 15000 });
     console.log(`[searchAndSelectContact] Dropdown option visible`);
 
     // Click directly with page.click
@@ -560,16 +558,19 @@ export class AgreementsPage extends BasePage {
     await contactInput.click();
     await this.wait(300);
 
-    // Type to search
-    await contactInput.fill('');
-    await contactInput.pressSequentially(contactName, { delay: 30 });
-    console.log(`[selectMultiSignerContact] Typed "${contactName}", waiting for dropdown...`);
+    // Type to search - use fill() for faster input, then wait for debounce + API
+    await contactInput.fill(contactName);
+    console.log(`[selectMultiSignerContact] Filled "${contactName}", waiting for search results...`);
 
-    // Wait for dropdown and click option
+    // Wait for dropdown with the specific contact option to appear
+    // This handles both debounce delay (300ms) and API response time
     const dropdown = this.page.locator(this.selectors.form.signerContactDropdown(order));
-    await dropdown.waitFor({ state: 'visible', timeout: 10000 });
-
     const option = dropdown.locator(`button:has-text("${contactName}")`).first();
+
+    // Wait for the specific option to appear (handles slow API on stage)
+    await option.waitFor({ state: 'visible', timeout: 15000 });
+    console.log(`[selectMultiSignerContact] Found contact option, clicking...`);
+
     await option.click();
     console.log(`[selectMultiSignerContact] Selected contact`);
     await this.wait(500);
