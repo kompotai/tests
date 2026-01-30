@@ -114,13 +114,9 @@ export default async function globalSetup() {
     console.log(`  Super Admin:  ${hasSuperAdmin ? '✅ Доступен' : '⚠️  Не задан (тесты SA будут пропущены)'}`);
     console.log('─'.repeat(60));
 
-    // Ensure test contacts exist for agreements tests
-    console.log('  📋 Проверка тестовых контактов:');
-    try {
-      await ensureTestContacts(process.env.MONGODB_URI!, wsId);
-    } catch (error) {
-      console.error('  ⚠️  Ошибка создания контактов:', error);
-    }
+    // NOTE: Test contacts are created in company-owner.spec.ts AFTER workspace cleanup
+    // because cleanup deletes the database including contacts
+    console.log('  📋 Тестовые контакты: создаются после cleanup (в company-owner.spec.ts)');
 
     console.log('─'.repeat(60));
     console.log('  Тесты:');
