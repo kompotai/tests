@@ -89,7 +89,7 @@ test.describe('Users Login Verification', () => {
 
     // Use owner credentials from environment variables
     const ownerEmail = process.env.WS_MEGATEST_OWNER_EMAIL || process.env.SUPER_ADMIN_EMAIL;
-    const ownerPassword = process.env.WS_OWNER_PASSWORD || process.env.SUPER_ADMIN_PASSWORD;
+    const ownerPassword = process.env.WS_MEGATEST_OWNER_PASSWORD || process.env.WS_OWNER_PASSWORD || process.env.SUPER_ADMIN_PASSWORD;
 
     if (!ownerEmail || !ownerPassword) {
       console.log('⚠️ Owner credentials not available, skipping whitespace trim test');
