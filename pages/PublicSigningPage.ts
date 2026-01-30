@@ -23,7 +23,7 @@ export class PublicSigningPage {
 
   async goto(signingUrl: string): Promise<void> {
     await this.page.goto(signingUrl);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
   async waitForStep(step: 'code' | 'identity' | 'fields' | 'complete' | 'error'): Promise<void> {

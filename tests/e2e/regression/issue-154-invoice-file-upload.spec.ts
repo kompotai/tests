@@ -72,7 +72,8 @@ ownerTest.describe('Issue #154: Invoice File Upload', () => {
     await expect(errorMessage).not.toBeVisible();
 
     // Verify the file appears in the list (check for the filename)
-    const uploadedFile = page.getByText('test-document.txt');
+    // Use .first() because there might be multiple files with the same name from previous test runs
+    const uploadedFile = page.getByText('test-document.txt').first();
     await expect(uploadedFile).toBeVisible({ timeout: 5000 });
   });
 });

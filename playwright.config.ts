@@ -87,7 +87,7 @@ export default defineConfig({
       name: 'contacts',
       testDir: './tests/e2e/04-contacts',
       dependencies: ['company-owner'],
-      fullyParallel: true,
+      fullyParallel: false,  // Sequential - CRUD operations can conflict with parallel execution
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/owner.json',

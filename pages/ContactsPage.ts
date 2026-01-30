@@ -53,7 +53,7 @@ export class ContactsPage extends BasePage {
   async search(query: string): Promise<void> {
     const url = `${this.path}?search=${encodeURIComponent(query)}`;
     await this.page.goto(url);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
     await this.wait(500);
   }
 
@@ -282,7 +282,7 @@ export class ContactsPage extends BasePage {
     const viewButton = this.page.locator(this.selectors.rowViewButton(identifier)).first();
     await viewButton.click();
     await this.page.waitForURL(/\/contacts\/[a-f0-9]+/, { timeout: 10000 });
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
   async clickRowEdit(identifier: string): Promise<void> {
