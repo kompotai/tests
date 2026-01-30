@@ -54,6 +54,8 @@ export const AgreementsSelectors = {
     editButton: '[data-testid="edit-agreement-button"]',
     signersSection: '[data-testid="signers-section"]',
     signerCard: (index: number) => `[data-testid="signer-card-${index}"]`,
+    getSigningLink: (index: number) => `[data-testid="get-signing-link-${index}"]`,
+    regenerateSigningLink: (index: number) => `[data-testid="regenerate-signing-link-${index}"]`,
     filledField: (label: string) => `[data-testid="field-${label}"], :has-text("${label}")`,
     sendForSignature: '[data-testid="send-for-signature-button"]',
     // PDF page navigation (numbered buttons)

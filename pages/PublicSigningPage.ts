@@ -273,12 +273,23 @@ export class PublicSigningPage {
   }
 
   async getCurrentPage(): Promise<number> {
-    // Page navigation buttons
-    const activeBtn = this.page.locator('button[class*="bg-zinc-900"], button[class*="bg-zinc"]').filter({
-      hasText: /^\d+$/
-    }).first();
-    const text = await activeBtn.textContent();
-    return parseInt(text || '1');
+    // Use data-current attribute to find active page button
+    const activeBtn = this.page.locator('[data-current="true"]');
+
+    if (await activeBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const text = await activeBtn.textContent();
+      return parseInt(text || '1');
+    }
+
+    // Fallback: look for bg-zinc-900 button
+    const altBtn = this.page.locator('button[class*="bg-zinc-900"]').filter({ hasText: /^\d+$/ }).first();
+    if (await altBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      const text = await altBtn.textContent();
+      return parseInt(text || '1');
+    }
+
+    // Fallback: return 1
+    return 1;
   }
 
   async getTotalPages(): Promise<number> {
@@ -287,10 +298,14 @@ export class PublicSigningPage {
   }
 
   async goToPage(pageNumber: number): Promise<void> {
-    const pageBtn = this.page.locator(`header button:has-text("${pageNumber}")`);
+    // Use data-testid for reliable page navigation
+    const pageBtn = this.page.locator(`[data-testid="page-button-${pageNumber}"]`);
     if (await pageBtn.isVisible()) {
       await pageBtn.click();
+      // Wait for page to update
       await this.page.waitForTimeout(1000);
+      // Wait for data-current to update
+      await this.page.waitForSelector(`[data-testid="page-button-${pageNumber}"][data-current="true"]`, { timeout: 5000 }).catch(() => {});
     }
   }
 

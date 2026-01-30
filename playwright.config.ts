@@ -104,6 +104,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 06: Opportunities - CRUD operations on opportunities
+    {
+      name: 'opportunities',
+      testDir: './tests/e2e/06-opportunities',
+      dependencies: ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests

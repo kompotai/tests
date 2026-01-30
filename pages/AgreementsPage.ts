@@ -676,6 +676,88 @@ export class AgreementsPage extends BasePage {
   }
 
   // ============================================
+  // Signing Link Management
+  // ============================================
+
+  async generateSigningLink(signerIndex: number): Promise<{ link: string; code: string }> {
+    const getLinkBtn = this.page.locator(this.selectors.view.getSigningLink(signerIndex));
+    await getLinkBtn.click();
+
+    // Wait for link to be generated
+    await this.wait(3000);
+
+    const signerCard = this.page.locator(this.selectors.view.signerCard(signerIndex));
+
+    // Get the signing URL
+    const urlElement = signerCard.locator('.font-mono').first();
+    await urlElement.waitFor({ state: 'visible', timeout: 10000 });
+    const link = (await urlElement.textContent()) || '';
+
+    // Get the verification code - look for "Verification code: XXXXXX" specifically
+    const codeElement = signerCard.locator('text=/Verification code:\\s*\\d{6}/i');
+    const codeText = await codeElement.textContent().catch(() => '');
+    const code = codeText?.match(/\d{6}/)?.[0] || '';
+
+    console.log(`[generateSigningLink] Generated link for signer ${signerIndex}: ${link.substring(0, 50)}...`);
+    console.log(`[generateSigningLink] Verification code: ${code}`);
+
+    return { link, code };
+  }
+
+  async regenerateSigningLink(signerIndex: number): Promise<{ link: string; code: string }> {
+    const regenerateBtn = this.page.locator(this.selectors.view.regenerateSigningLink(signerIndex));
+    await regenerateBtn.click();
+
+    // Wait for new link to be generated
+    await this.wait(3000);
+
+    const signerCard = this.page.locator(this.selectors.view.signerCard(signerIndex));
+
+    // Get the new signing URL
+    const urlElement = signerCard.locator('.font-mono').first();
+    const link = (await urlElement.textContent()) || '';
+
+    // Get the new verification code - look for "Verification code: XXXXXX" specifically
+    const codeElement = signerCard.locator('text=/Verification code:\\s*\\d{6}/i');
+    const codeText = await codeElement.textContent().catch(() => '');
+    const code = codeText?.match(/\d{6}/)?.[0] || '';
+
+    console.log(`[regenerateSigningLink] Regenerated link for signer ${signerIndex}`);
+    console.log(`[regenerateSigningLink] New verification code: ${code}`);
+
+    return { link, code };
+  }
+
+  async getSigningLinkInfo(signerIndex: number): Promise<{ link: string; code: string } | null> {
+    const signerCard = this.page.locator(this.selectors.view.signerCard(signerIndex));
+
+    // Check if link is already generated
+    const urlElement = signerCard.locator('.font-mono').first();
+    const hasLink = await urlElement.isVisible({ timeout: 1000 }).catch(() => false);
+
+    if (!hasLink) {
+      return null;
+    }
+
+    const link = (await urlElement.textContent()) || '';
+
+    // Get the verification code - look for "Verification code: XXXXXX" specifically
+    const codeElement = signerCard.locator('text=/Verification code:\\s*\\d{6}/i');
+    const codeText = await codeElement.textContent().catch(() => '');
+    const code = codeText?.match(/\d{6}/)?.[0] || '';
+
+    return { link, code };
+  }
+
+  async getSignerStatus(signerIndex: number): Promise<string> {
+    const signerCard = this.page.locator(this.selectors.view.signerCard(signerIndex));
+    const statusBadge = signerCard.locator('text=/Pending|Sent|Viewed|Signed|Declined|Awaiting/i').first();
+
+    const status = await statusBadge.textContent({ timeout: 5000 }).catch(() => '');
+    return status?.trim() || '';
+  }
+
+  // ============================================
   // Screenshot helpers
   // ============================================
 
