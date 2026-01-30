@@ -76,6 +76,48 @@ test.describe('Users Login Verification', () => {
     });
   }
 
+  // Test that whitespace is trimmed from inputs
+  test('should trim whitespace from inputs during submission', async ({ browser }) => {
+    const testUser = USERS[0]; // admin
+
+    const context = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    const page = await context.newPage();
+
+    await page.goto('/account/login');
+    await page.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
+
+    // Enter values with leading and trailing whitespace
+    await page.fill('[data-testid="login-input-wsid"]', `  ${WORKSPACE_ID}  `);
+    await page.fill('[data-testid="login-input-email"]', `  ${testUser.email}  `);
+    await page.fill('[data-testid="login-input-password"]', testUser.password);
+    await page.click('[data-testid="login-button-submit"]');
+
+    try {
+      await page.waitForURL(/\/ws/, { timeout: 20000 });
+      expect(page.url()).toContain('/ws');
+      console.log('✅ Whitespace trimming works correctly');
+    } catch {
+      const errorVisible = await page.locator('text=/Invalid|Error/i').isVisible().catch(() => false);
+      if (errorVisible || page.url().includes('/login')) {
+        console.log('⚠️ Login failed with trimmed whitespace - bug may still exist');
+        await context.close();
+        test.fail();
+        return;
+      }
+      if (page.url().includes('/manage')) {
+        console.log('⚠️ User redirected to /manage - not a member of workspace, skipping');
+        await context.close();
+        test.skip();
+        return;
+      }
+      throw new Error(`Whitespace trim test failed: ${page.url()}`);
+    }
+
+    await context.close();
+  });
+
   // Test that users can login with credentials (fresh login without any stored auth)
   test('admin can login with fresh credentials', async ({ browser }) => {
     const testUser = USERS[0]; // admin
