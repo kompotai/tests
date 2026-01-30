@@ -22,7 +22,8 @@ ownerTest.describe('Issue #160: Meeting Phone Validation', { tag: ['@regression'
     try {
       // Navigate to meetings page
       await page.goto('/ws/meetings');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1000); // Wait for data to load
 
       // Handle cookie consent if present
       const acceptCookies = page.getByRole('button', { name: 'Accept All' });
@@ -85,7 +86,8 @@ ownerTest.describe('Issue #160: Meeting Phone Validation', { tag: ['@regression'
     try {
       // Navigate to meetings page
       await page.goto('/ws/meetings');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
+      await page.waitForTimeout(1000); // Wait for data to load
 
       // Handle cookie consent if present
       const acceptCookies = page.getByRole('button', { name: 'Accept All' });
