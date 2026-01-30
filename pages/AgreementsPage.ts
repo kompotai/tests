@@ -555,6 +555,18 @@ export class AgreementsPage extends BasePage {
 
     // Find the contact input within this role
     const contactInput = this.page.locator(this.selectors.form.signerContactInput(order));
+
+    // Set up network monitoring for contact search
+    const searchResponses: Array<{ status: number; body: string }> = [];
+    const responseHandler = async (response: import('@playwright/test').Response) => {
+      if (response.url().includes('/api/contacts/search')) {
+        const body = await response.text().catch(() => 'failed to get body');
+        searchResponses.push({ status: response.status(), body: body.substring(0, 500) });
+        console.log(`[selectMultiSignerContact] API response: status=${response.status()}, body=${body.substring(0, 200)}`);
+      }
+    };
+    this.page.on('response', responseHandler);
+
     await contactInput.click();
     await this.wait(300);
 
@@ -562,10 +574,27 @@ export class AgreementsPage extends BasePage {
     await contactInput.fill(contactName);
     console.log(`[selectMultiSignerContact] Filled "${contactName}", waiting for search results...`);
 
+    // Wait for API response first
+    await this.wait(500); // Wait for debounce
+    let apiWaitCount = 0;
+    while (searchResponses.length === 0 && apiWaitCount < 20) {
+      await this.wait(500);
+      apiWaitCount++;
+      console.log(`[selectMultiSignerContact] Waiting for API response... (attempt ${apiWaitCount})`);
+    }
+    console.log(`[selectMultiSignerContact] API responses received: ${searchResponses.length}`);
+
+    // Remove listener
+    this.page.off('response', responseHandler);
+
     // Wait for dropdown with the specific contact option to appear
-    // This handles both debounce delay (300ms) and API response time
     const dropdown = this.page.locator(this.selectors.form.signerContactDropdown(order));
     const option = dropdown.locator(`button:has-text("${contactName}")`).first();
+
+    // Check what's visible
+    const dropdownVisible = await dropdown.isVisible().catch(() => false);
+    const optionsCount = await dropdown.locator('button').count().catch(() => 0);
+    console.log(`[selectMultiSignerContact] Dropdown visible: ${dropdownVisible}, options: ${optionsCount}`);
 
     // Wait for the specific option to appear (handles slow API on stage)
     await option.waitFor({ state: 'visible', timeout: 15000 });
