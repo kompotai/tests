@@ -95,6 +95,7 @@ jobs:
           name: auth-state
           path: .auth/
           retention-days: 1
+          include-hidden-files: true
 
       - name: Upload setup report
         uses: actions/upload-artifact@v4
