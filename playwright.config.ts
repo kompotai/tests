@@ -18,10 +18,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // Limit workers to prevent overwhelming the remote server
-  workers: process.env.CI ? 1 : 4,
-  // Stop after 5 failures to save time on CI (fail-fast)
-  maxFailures: process.env.CI ? 5 : undefined,
+  // Workers: 2 in CI for moderate parallelism, 4 locally
+  workers: process.env.PW_WORKERS ? parseInt(process.env.PW_WORKERS) : (process.env.CI ? 2 : 4),
+  // Stop after 3 failures to save time on CI (strict fail-fast)
+  maxFailures: process.env.CI ? 3 : undefined,
 
   // Reporter configuration
   reporter: [

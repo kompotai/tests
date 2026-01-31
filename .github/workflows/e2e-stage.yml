@@ -13,20 +13,24 @@ on:
         type: string
 
 jobs:
-  # Phase 1: Setup - create auth states (must run first)
-  setup:
-    name: Setup Auth
+  e2e:
+    name: E2E Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - uses: dopplerhq/cli-action@v3
 
-      - name: Wait for stage
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Wait for stage to be ready
         env:
           STAGE_URL: https://kompot-stage.up.railway.app
           EXPECTED_VERSION: ${{ github.event.client_payload.commit_sha || inputs.commit_sha || '' }}
@@ -34,130 +38,62 @@ jobs:
           echo "Checking stage deployment..."
           MAX_ATTEMPTS=10
           ATTEMPT=0
+
           while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
             ATTEMPT=$((ATTEMPT + 1))
             echo "Attempt $ATTEMPT/$MAX_ATTEMPTS..."
+
             RESPONSE=$(curl -s "$STAGE_URL/api/health" || echo '{"status":"error"}')
+            echo "Health response: $RESPONSE"
+
             STATUS=$(echo "$RESPONSE" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+
             if [ "$STATUS" = "ok" ]; then
               DEPLOYED_VERSION=$(echo "$RESPONSE" | grep -o '"version":"[^"]*"' | cut -d'"' -f4)
-              echo "Stage is healthy! Version: $DEPLOYED_VERSION"
+              echo "Stage is healthy! Deployed version: $DEPLOYED_VERSION"
+
               if [ -n "$EXPECTED_VERSION" ]; then
                 EXPECTED_SHORT="${EXPECTED_VERSION:0:8}"
-                [ "$DEPLOYED_VERSION" = "$EXPECTED_SHORT" ] && echo "Version matches!" || echo "Warning: Expected $EXPECTED_SHORT, got $DEPLOYED_VERSION"
+                if [ "$DEPLOYED_VERSION" = "$EXPECTED_SHORT" ]; then
+                  echo "Version matches expected!"
+                else
+                  echo "Warning: Version mismatch. Expected: $EXPECTED_SHORT, Got: $DEPLOYED_VERSION"
+                fi
               fi
               exit 0
             fi
+
             sleep 5
           done
-          echo "Stage health check timeout, continuing..."
+
+          echo "Stage health check timeout, running tests anyway..."
 
       - name: Install dependencies
         run: npm install
 
-      - name: Install Playwright
+      - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run setup tests
+      - name: Run E2E tests
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
           FORCE_SETUP: 'true'
-        run: |
-          doppler run --project kompot --config stagetest -- \
-            npx playwright test --project=super-admin --project=company-owner --project=workspace-users
+          # Use 2 workers for parallel execution (up from 1)
+          PW_WORKERS: '2'
+        run: doppler run --project kompot --config stagetest -- npx playwright test --workers=${PW_WORKERS}
 
-      - name: Upload auth states
-        uses: actions/upload-artifact@v4
-        with:
-          name: auth-states
-          path: .auth/
-          retention-days: 1
-
-      - name: Upload setup report
+      - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: report-setup
+          name: playwright-report
           path: playwright-report/
           retention-days: 7
 
-  # Phase 2: Parallel test execution (3 shards)
-  test:
-    name: ${{ matrix.name }}
-    needs: setup
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: Contacts + Agreements
-            shard: contacts-agreements
-            projects: --project=contacts --project=agreements
-          - name: Opportunities + Invoices
-            shard: opportunities-invoices
-            projects: --project=opportunities --project=invoices
-          - name: Jobs + Projects + Regression
-            shard: jobs-projects-regression
-            projects: --project=jobs --project=projects --project=regression
-
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - uses: dopplerhq/cli-action@v3
-
-      - name: Download auth states
-        uses: actions/download-artifact@v4
-        with:
-          name: auth-states
-          path: .auth/
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Install Playwright
-        run: npx playwright install --with-deps chromium
-
-      - name: Run tests
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-        run: |
-          doppler run --project kompot --config stagetest -- \
-            npx playwright test ${{ matrix.projects }}
-
-      - name: Upload report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: report-${{ matrix.shard }}
-          path: playwright-report/
-          retention-days: 7
-
-      - name: Upload failures
+      - name: Upload test artifacts
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: failures-${{ matrix.shard }}
+          name: test-results
           path: test-results/
           retention-days: 7
-
-  # Summary - check all jobs passed
-  summary:
-    name: Summary
-    needs: [setup, test]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Check results
-        run: |
-          if [ "${{ needs.setup.result }}" = "failure" ]; then
-            echo "❌ Setup failed"
-            exit 1
-          fi
-          if [ "${{ needs.test.result }}" = "failure" ]; then
-            echo "❌ Some tests failed"
-            exit 1
-          fi
-          echo "✅ All tests passed!"
