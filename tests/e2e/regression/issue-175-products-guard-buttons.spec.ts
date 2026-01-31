@@ -9,16 +9,17 @@
  */
 
 import { ownerTest, technicianTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Issue #175: Products Guard Buttons', { tag: ['@regression'] }, () => {
   ownerTest('owner sees edit and delete buttons @regression', async ({ page, request }) => {
     // First ensure there's at least one product
-    const productsResponse = await request.get('/api/products?limit=1');
+    const productsResponse = await request.get('/api/ws/megatest/products?limit=1');
     if (productsResponse.ok()) {
       const products = await productsResponse.json();
       if (!products.data || products.data.length === 0) {
         // Create a test product
-        await request.post('/api/products', {
+        await request.post('/api/ws/megatest/products', {
           data: {
             name: `Test Product #175 - ${Date.now()}`,
             description: 'Test product for regression test',
@@ -29,7 +30,7 @@ ownerTest.describe('Issue #175: Products Guard Buttons', { tag: ['@regression'] 
     }
 
     // Navigate to products page
-    await page.goto('/ws/products');
+    await page.goto(`/ws/${WORKSPACE_ID}/products`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
@@ -67,7 +68,7 @@ ownerTest.describe('Issue #175: Products Guard Buttons', { tag: ['@regression'] 
 technicianTest.describe('Issue #175: Technician Products Buttons', { tag: ['@regression'] }, () => {
   technicianTest('technician does not see edit and delete buttons @regression', async ({ page }) => {
     // Navigate to products page as technician
-    await page.goto('/ws/products');
+    await page.goto(`/ws/${WORKSPACE_ID}/products`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
@@ -105,7 +106,7 @@ technicianTest.describe('Issue #175: Technician Products Buttons', { tag: ['@reg
 
   technicianTest('technician can still view products @regression', async ({ page }) => {
     // Navigate to products page as technician
-    await page.goto('/ws/products');
+    await page.goto(`/ws/${WORKSPACE_ID}/products`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 

@@ -5,12 +5,13 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Invoice Related Entities', () => {
   ownerTest.describe('API Integration', () => {
     ownerTest('related API returns correct structure', async ({ page }) => {
       // Go to invoices list
-      await page.goto('/ws/finances/invoices');
+      await page.goto(`/ws/${WORKSPACE_ID}/finances/invoices`);
       await page.waitForLoadState('networkidle');
 
       // Wait for table to load
@@ -37,7 +38,7 @@ ownerTest.describe('Invoice Related Entities', () => {
 
           // Call the related API directly
           const response = await page.evaluate(async (id) => {
-            const res = await fetch(`/api/invoices/${id}/related`);
+            const res = await fetch(`/api/ws/megatest/invoices/${id}/related`);
             return {
               ok: res.ok,
               status: res.status,
@@ -70,7 +71,7 @@ ownerTest.describe('Invoice Related Entities', () => {
   ownerTest.describe('View Page Layout', () => {
     ownerTest('invoice view page has payments section', async ({ page }) => {
       // Go to invoices list
-      await page.goto('/ws/finances/invoices');
+      await page.goto(`/ws/${WORKSPACE_ID}/finances/invoices`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
 

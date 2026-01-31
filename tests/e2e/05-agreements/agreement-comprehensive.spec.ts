@@ -11,6 +11,7 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { AgreementTemplatesPage } from '@pages/AgreementTemplatesPage';
 import { PublicSigningPage } from '@pages/PublicSigningPage';
@@ -259,16 +260,16 @@ ownerTest.describe('Comprehensive Agreement Tests', () => {
       ];
 
       // Get template fields via API
-      const response = await page.request.get('/api/agreement-templates/search', {
+      const response = await page.request.get('/api/ws/megatest/agreement-templates/search', {
         data: {},
       });
 
       // Search for template by name via fetch
-      await page.goto('/ws/agreements/templates');
+      await page.goto(`/ws/${WORKSPACE_ID}/agreements/templates`);
 
       // Get template data via API call from browser context
       const templateData = await page.evaluate(async (templateName) => {
-        const res = await fetch('/api/agreement-templates/search', {
+        const res = await fetch('/api/ws/megatest/agreement-templates/search', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({}),

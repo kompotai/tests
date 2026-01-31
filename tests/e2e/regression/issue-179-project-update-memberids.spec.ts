@@ -13,11 +13,12 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Issue #179: Project Update MemberIds', () => {
   ownerTest('can update a project without internal error @regression', async ({ page, request }) => {
     // Navigate to projects page
-    await page.goto('/ws/projects');
+    await page.goto(`/ws/${WORKSPACE_ID}/projects`);
     await page.waitForLoadState('networkidle');
 
     // Handle cookie consent if present
@@ -43,7 +44,7 @@ ownerTest.describe('Issue #179: Project Update MemberIds', () => {
 
       // Set up response listener
       const createResponse = page.waitForResponse(
-        (response) => response.url().includes('/api/projects') && response.request().method() === 'POST',
+        (response) => response.url().includes('/api/ws/megatest/projects') && response.request().method() === 'POST',
         { timeout: 10000 }
       );
 
@@ -69,7 +70,7 @@ ownerTest.describe('Issue #179: Project Update MemberIds', () => {
     }
 
     // Navigate to the project page
-    await page.goto(`/ws/projects/${projectId}`);
+    await page.goto(`/ws/${WORKSPACE_ID}/projects/${projectId}`);
     await page.waitForLoadState('networkidle');
 
     // Click Edit button
@@ -86,7 +87,7 @@ ownerTest.describe('Issue #179: Project Update MemberIds', () => {
 
     // Set up response listener for PATCH
     const updateResponse = page.waitForResponse(
-      (response) => response.url().includes(`/api/projects/${projectId}`) && response.request().method() === 'PATCH',
+      (response) => response.url().includes(`/api/ws/megatest/projects/${projectId}`) && response.request().method() === 'PATCH',
       { timeout: 10000 }
     );
 

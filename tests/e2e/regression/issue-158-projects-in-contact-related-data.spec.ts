@@ -13,7 +13,7 @@ import { ownerTest, expect } from '@fixtures/auth.fixture';
 ownerTest.describe('Issue #158: Projects in Contact Related Data', { tag: ['@regression'] }, () => {
   ownerTest('contact related data includes projects @regression', async ({ request }) => {
     // Create a test contact
-    const contactResponse = await request.post('/api/contacts', {
+    const contactResponse = await request.post('/api/ws/megatest/contacts', {
       data: {
         name: `Test Contact #158 - ${Date.now()}`,
       },
@@ -24,7 +24,7 @@ ownerTest.describe('Issue #158: Projects in Contact Related Data', { tag: ['@reg
 
     try {
       // Create a project linked to this contact
-      const projectResponse = await request.post('/api/projects', {
+      const projectResponse = await request.post('/api/ws/megatest/projects', {
         data: {
           name: 'Test Project for Issue #158',
           contactId: contactId,
@@ -37,7 +37,7 @@ ownerTest.describe('Issue #158: Projects in Contact Related Data', { tag: ['@reg
 
       try {
         // Fetch contact related data
-        const relatedResponse = await request.get(`/api/contacts/${contactId}/related-counts`);
+        const relatedResponse = await request.get(`/api/ws/megatest/contacts/${contactId}/related-counts`);
         expect(relatedResponse.status()).toBe(200);
 
         const relatedData = await relatedResponse.json();
@@ -60,11 +60,11 @@ ownerTest.describe('Issue #158: Projects in Contact Related Data', { tag: ['@reg
         expect(relatedData.documents.total).toBeGreaterThanOrEqual(projectsCount);
       } finally {
         // Cleanup project
-        await request.delete(`/api/projects/${projectId}`);
+        await request.delete(`/api/ws/megatest/projects/${projectId}`);
       }
     } finally {
       // Cleanup contact
-      await request.delete(`/api/contacts/${contactId}`);
+      await request.delete(`/api/ws/megatest/contacts/${contactId}`);
     }
   });
 });

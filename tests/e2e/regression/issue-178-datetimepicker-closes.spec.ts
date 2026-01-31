@@ -9,11 +9,12 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Issue #178: DateTimePicker Closes After Selection', { tag: ['@regression'] }, () => {
   ownerTest('calendar closes after selecting date in job form @regression', async ({ page, request }) => {
     // First create a contact for the job
-    const contactResponse = await request.post('/api/contacts', {
+    const contactResponse = await request.post('/api/ws/megatest/contacts', {
       data: { name: `Test Contact #178 - ${Date.now()}` },
     });
     expect(contactResponse.status()).toBe(201);
@@ -21,7 +22,7 @@ ownerTest.describe('Issue #178: DateTimePicker Closes After Selection', { tag: [
 
     try {
       // Navigate to jobs page
-      await page.goto('/ws/jobs');
+      await page.goto(`/ws/${WORKSPACE_ID}/jobs`);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
@@ -65,13 +66,13 @@ ownerTest.describe('Issue #178: DateTimePicker Closes After Selection', { tag: [
       await expect(jobForm).toBeVisible();
     } finally {
       // Cleanup
-      await request.delete(`/api/contacts/${contact.id}`);
+      await request.delete(`/api/ws/megatest/contacts/${contact.id}`);
     }
   });
 
   ownerTest('datetimepicker quick select works @regression', async ({ page, request }) => {
     // First create a contact
-    const contactResponse = await request.post('/api/contacts', {
+    const contactResponse = await request.post('/api/ws/megatest/contacts', {
       data: { name: `Test Contact #178b - ${Date.now()}` },
     });
     expect(contactResponse.status()).toBe(201);
@@ -79,7 +80,7 @@ ownerTest.describe('Issue #178: DateTimePicker Closes After Selection', { tag: [
 
     try {
       // Navigate to jobs page
-      await page.goto('/ws/jobs');
+      await page.goto(`/ws/${WORKSPACE_ID}/jobs`);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000);
 
@@ -122,7 +123,7 @@ ownerTest.describe('Issue #178: DateTimePicker Closes After Selection', { tag: [
       await expect(jobForm).toBeVisible();
     } finally {
       // Cleanup
-      await request.delete(`/api/contacts/${contact.id}`);
+      await request.delete(`/api/ws/megatest/contacts/${contact.id}`);
     }
   });
 });

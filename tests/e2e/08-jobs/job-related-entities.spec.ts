@@ -5,12 +5,13 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Job Related Entities', () => {
   ownerTest.describe('API Integration', () => {
     ownerTest('related API returns correct structure', async ({ page }) => {
       // Go to jobs list
-      await page.goto('/ws/jobs');
+      await page.goto(`/ws/${WORKSPACE_ID}/jobs`);
       await page.waitForLoadState('networkidle');
 
       // Wait for table to load
@@ -37,7 +38,7 @@ ownerTest.describe('Job Related Entities', () => {
 
           // Call the related API directly
           const response = await page.evaluate(async (id) => {
-            const res = await fetch(`/api/jobs/${id}/related`);
+            const res = await fetch(`/api/ws/megatest/jobs/${id}/related`);
             return {
               ok: res.ok,
               status: res.status,
@@ -65,7 +66,7 @@ ownerTest.describe('Job Related Entities', () => {
   ownerTest.describe('View Page Layout', () => {
     ownerTest('job view page has related invoices section when invoices exist', async ({ page }) => {
       // Go to jobs list
-      await page.goto('/ws/jobs');
+      await page.goto(`/ws/${WORKSPACE_ID}/jobs`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
 
@@ -82,7 +83,8 @@ ownerTest.describe('Job Related Entities', () => {
         await page.waitForTimeout(2000);
 
         // Verify the page has loaded correctly - check for job title in header
-        const header = page.locator('h1');
+        // Use .first() to avoid strict mode violation when multiple h1 elements are present
+        const header = page.locator('h1').first();
         await expect(header).toBeVisible();
 
         // Check if related invoices section exists (only if there are invoices)

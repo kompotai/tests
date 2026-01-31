@@ -9,11 +9,12 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Issue #160: Meeting Phone Validation', { tag: ['@regression'] }, () => {
   ownerTest('phone field rejects invalid characters @regression', async ({ page, request }) => {
     // First create a contact for the meeting
-    const contactResponse = await request.post('/api/contacts', {
+    const contactResponse = await request.post('/api/ws/megatest/contacts', {
       data: { name: `Test Contact #160 - ${Date.now()}` },
     });
     expect(contactResponse.status()).toBe(201);
@@ -21,7 +22,7 @@ ownerTest.describe('Issue #160: Meeting Phone Validation', { tag: ['@regression'
 
     try {
       // Navigate to meetings page
-      await page.goto('/ws/meetings');
+      await page.goto(`/ws/${WORKSPACE_ID}/meetings`);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000); // Wait for data to load
 
@@ -71,13 +72,13 @@ ownerTest.describe('Issue #160: Meeting Phone Validation', { tag: ['@regression'
       await expect(errorMessage).toBeVisible({ timeout: 5000 });
     } finally {
       // Cleanup
-      await request.delete(`/api/contacts/${contact.id}`);
+      await request.delete(`/api/ws/megatest/contacts/${contact.id}`);
     }
   });
 
   ownerTest('phone field accepts valid phone number @regression', async ({ page, request }) => {
     // First create a contact for the meeting
-    const contactResponse = await request.post('/api/contacts', {
+    const contactResponse = await request.post('/api/ws/megatest/contacts', {
       data: { name: `Test Contact #160 valid - ${Date.now()}` },
     });
     expect(contactResponse.status()).toBe(201);
@@ -85,7 +86,7 @@ ownerTest.describe('Issue #160: Meeting Phone Validation', { tag: ['@regression'
 
     try {
       // Navigate to meetings page
-      await page.goto('/ws/meetings');
+      await page.goto(`/ws/${WORKSPACE_ID}/meetings`);
       await page.waitForLoadState('domcontentloaded');
       await page.waitForTimeout(1000); // Wait for data to load
 
@@ -120,7 +121,7 @@ ownerTest.describe('Issue #160: Meeting Phone Validation', { tag: ['@regression'
       await expect(phoneInput).toHaveValue('+1 (555) 123-4567');
     } finally {
       // Cleanup
-      await request.delete(`/api/contacts/${contact.id}`);
+      await request.delete(`/api/ws/megatest/contacts/${contact.id}`);
     }
   });
 });

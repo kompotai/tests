@@ -9,11 +9,12 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Issue #164: DatePicker Viewport Positioning', { tag: ['@regression'] }, () => {
   ownerTest('datepicker opens and is usable @regression', async ({ page }) => {
     // Navigate to estimates page
-    await page.goto('/ws/estimates');
+    await page.goto(`/ws/${WORKSPACE_ID}/estimates`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
@@ -59,7 +60,7 @@ ownerTest.describe('Issue #164: DatePicker Viewport Positioning', { tag: ['@regr
 
   ownerTest('datepicker date selection works @regression', async ({ page }) => {
     // Navigate to estimates page
-    await page.goto('/ws/estimates');
+    await page.goto(`/ws/${WORKSPACE_ID}/estimates`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 

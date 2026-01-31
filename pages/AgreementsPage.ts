@@ -7,6 +7,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 export interface SignatoryData {
   roleId?: string;
@@ -24,7 +25,7 @@ export interface AgreementData {
 }
 
 export class AgreementsPage extends BasePage {
-  readonly path = '/ws/agreements';
+  get path() { return `/ws/${WORKSPACE_ID}/agreements`; }
 
   private get selectors() {
     return Selectors.agreements;
@@ -280,7 +281,7 @@ export class AgreementsPage extends BasePage {
   async openAgreement(identifier: string): Promise<void> {
     // If identifier looks like a MongoDB ObjectId, navigate directly
     if (/^[a-f0-9]{24}$/.test(identifier)) {
-      await this.page.goto(`/ws/agreements/${identifier}`);
+      await this.page.goto(`/ws/${WORKSPACE_ID}/agreements/${identifier}`);
       await this.page.waitForURL(/\/agreements\/[a-f0-9]+/, { timeout: 10000 });
       await this.waitForPageLoad();
       return;

@@ -7,6 +7,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
+import { WORKSPACE_ID } from '@fixtures/users';
 import path from 'path';
 
 export interface TemplateFieldData {
@@ -48,7 +49,7 @@ export interface TemplateData {
 }
 
 export class AgreementTemplatesPage extends BasePage {
-  readonly path = '/ws/agreements';
+  get path() { return `/ws/${WORKSPACE_ID}/agreements`; }
 
   private get selectors() {
     return Selectors.agreementTemplates;

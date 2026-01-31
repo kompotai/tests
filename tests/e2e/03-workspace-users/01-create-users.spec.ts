@@ -33,7 +33,7 @@ for (const user of USERS) {
       const testPage = await testContext.newPage();
 
       try {
-        await testPage.goto('/ws/contacts', { timeout: 15000 });
+        await testPage.goto(`/ws/${WORKSPACE_ID}/contacts`, { timeout: 15000 });
         await testPage.waitForLoadState('networkidle');
         const url = testPage.url();
 

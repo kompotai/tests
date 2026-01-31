@@ -14,11 +14,12 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Issue #156: Meeting Creation BSONError', () => {
   ownerTest('can create a meeting without BSONError @regression @smoke', async ({ page, request }) => {
     // Navigate to meetings page
-    await page.goto('/ws/meetings');
+    await page.goto(`/ws/${WORKSPACE_ID}/meetings`);
     await page.waitForLoadState('networkidle');
 
     // Handle cookie consent if present
@@ -51,7 +52,7 @@ ownerTest.describe('Issue #156: Meeting Creation BSONError', () => {
 
     // Set up response listener before clicking
     const responsePromise = page.waitForResponse(
-      (response) => response.url().includes('/api/meetings') && response.request().method() === 'POST',
+      (response) => response.url().includes('/api/ws/megatest/meetings') && response.request().method() === 'POST',
       { timeout: 10000 }
     );
 

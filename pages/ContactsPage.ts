@@ -5,6 +5,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 export interface ContactAddress {
   line1?: string;
@@ -33,7 +34,7 @@ export interface ContactData {
 }
 
 export class ContactsPage extends BasePage {
-  readonly path = '/ws/contacts';
+  get path() { return `/ws/${WORKSPACE_ID}/contacts`; }
 
   private get selectors() {
     return Selectors.contacts;

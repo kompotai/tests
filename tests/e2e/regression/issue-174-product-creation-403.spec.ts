@@ -13,12 +13,15 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Issue #174: Product Creation 403', () => {
   ownerTest('owner can see Create Product button @regression', async ({ page }) => {
     // Navigate to products page
-    await page.goto('/ws/products');
-    await page.waitForLoadState('networkidle');
+    await page.goto(`/ws/${WORKSPACE_ID}/products`);
+    await page.waitForLoadState('domcontentloaded');
+    // Wait for table to appear instead of networkidle (which can timeout with websockets)
+    await page.waitForSelector('table', { timeout: 10000 });
 
     // Handle cookie consent if present
     const acceptCookies = page.getByRole('button', { name: 'Accept All' });
@@ -37,7 +40,7 @@ ownerTest.describe('Issue #174: Product Creation 403', () => {
     // Test direct API access to verify no 403
     const productName = `API Test #174 - ${Date.now()}`;
 
-    const response = await request.post('/api/products', {
+    const response = await request.post('/api/ws/megatest/products', {
       data: {
         name: productName,
         type: 'product',

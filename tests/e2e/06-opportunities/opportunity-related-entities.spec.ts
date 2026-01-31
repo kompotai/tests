@@ -5,6 +5,7 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 import { OpportunitiesPage } from '@pages/OpportunitiesPage';
 import { uniqueOpportunityName, TEST_CONTACTS } from './opportunities.fixture';
 
@@ -41,7 +42,7 @@ ownerTest.describe('Opportunity Related Entities', () => {
       });
 
       // Navigate to view page
-      await page.goto(`/ws/opportunities`);
+      await page.goto(`/ws/${WORKSPACE_ID}/opportunities`);
       await page.waitForLoadState('networkidle');
       await opportunitiesPage.clickRowToOpen(name);
 
@@ -58,7 +59,7 @@ ownerTest.describe('Opportunity Related Entities', () => {
       });
 
       // Navigate to view page
-      await page.goto(`/ws/opportunities`);
+      await page.goto(`/ws/${WORKSPACE_ID}/opportunities`);
       await page.waitForLoadState('networkidle');
       await opportunitiesPage.clickRowToOpen(name);
 
@@ -79,7 +80,7 @@ ownerTest.describe('Opportunity Related Entities', () => {
 
       // Navigate to view page via direct URL
       // First get the opportunity ID by looking at the page
-      await page.goto(`/ws/opportunities`);
+      await page.goto(`/ws/${WORKSPACE_ID}/opportunities`);
       await page.waitForLoadState('networkidle');
 
       // Click on opportunity row to navigate to view page
@@ -123,7 +124,7 @@ ownerTest.describe('Opportunity Related Entities', () => {
       });
 
       // Navigate to opportunities list and get the created opportunity ID
-      await page.goto('/ws/opportunities');
+      await page.goto(`/ws/${WORKSPACE_ID}/opportunities`);
       await page.waitForLoadState('networkidle');
 
       // Click to open the opportunity
@@ -139,7 +140,7 @@ ownerTest.describe('Opportunity Related Entities', () => {
 
         // Call the related API directly
         const response = await page.evaluate(async (id) => {
-          const res = await fetch(`/api/opportunities/${id}/related`);
+          const res = await fetch(`/api/ws/megatest/opportunities/${id}/related`);
           return {
             ok: res.ok,
             status: res.status,

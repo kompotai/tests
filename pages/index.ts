@@ -10,3 +10,5 @@ export { OpportunitiesPage, type OpportunityData } from './OpportunitiesPage';
 export { AgreementsPage, type AgreementData, type SignatoryData } from './AgreementsPage';
 export { AgreementTemplatesPage, type TemplateData, type TemplateFieldData } from './AgreementTemplatesPage';
 export { PublicSigningPage, type SignerIdentity } from './PublicSigningPage';
+export { MeetingsPage } from './MeetingsPage';
+export { EmailCampaignsPage } from './EmailCampaignsPage';

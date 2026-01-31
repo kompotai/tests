@@ -14,6 +14,7 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 import path from 'path';
 import fs from 'fs';
 
@@ -34,7 +35,7 @@ ownerTest.describe('Issue #154: Invoice File Upload', () => {
 
   ownerTest('can upload file to invoice @regression @smoke', async ({ page }) => {
     // Navigate to invoices
-    await page.goto('/ws/finances/invoices');
+    await page.goto(`/ws/${WORKSPACE_ID}/finances/invoices`);
     await page.waitForLoadState('networkidle');
 
     // Check if there are any invoices

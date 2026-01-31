@@ -20,7 +20,7 @@ test.describe('Users Login Verification', () => {
     expect(fs.existsSync(authFile)).toBe(true);
 
     // Try to access workspace with owner auth
-    await page.goto('/ws/contacts');
+    await page.goto(`/ws/${WORKSPACE_ID}/contacts`);
     await page.waitForLoadState('networkidle');
 
     // Should be in workspace (not redirected to login)
@@ -47,7 +47,7 @@ test.describe('Users Login Verification', () => {
       const page = await context.newPage();
 
       // Try to access workspace
-      await page.goto('/ws/contacts');
+      await page.goto(`/ws/${WORKSPACE_ID}/contacts`);
       await page.waitForLoadState('networkidle');
 
       const url = page.url();

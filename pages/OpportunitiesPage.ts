@@ -5,6 +5,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 export interface OpportunityData {
   name: string;
@@ -14,7 +15,7 @@ export interface OpportunityData {
 }
 
 export class OpportunitiesPage extends BasePage {
-  readonly path = '/ws/opportunities';
+  get path() { return `/ws/${WORKSPACE_ID}/opportunities`; }
   private get s() { return Selectors.opportunities; }
 
   async waitForPageLoad(): Promise<void> {

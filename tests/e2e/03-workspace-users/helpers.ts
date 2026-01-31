@@ -20,7 +20,7 @@ export async function dismissCookieConsent(page: Page) {
 
 export async function createUserViaUI(page: Page, user: User) {
   // Navigate to Settings > Users
-  await page.goto('/ws/settings/users');
+  await page.goto(`/ws/${WORKSPACE_ID}/settings/users`);
   await page.waitForLoadState('networkidle');
   await dismissCookieConsent(page);
 

@@ -9,6 +9,7 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { TEST_CONTACTS } from './agreements.fixture';
 import { Page } from '@playwright/test';
@@ -306,7 +307,7 @@ ownerTest.describe('Agreement Form Signers', () => {
       }
 
       // Navigate to agreement view
-      await page.goto(`/ws/agreements/${createdAgreementId}`);
+      await page.goto(`/ws/${WORKSPACE_ID}/agreements/${createdAgreementId}`);
       await page.waitForLoadState('networkidle');
 
       // Click edit button to open sidebar
@@ -340,7 +341,7 @@ ownerTest.describe('Agreement Form Signers', () => {
       }
 
       // Navigate to agreement view
-      await page.goto(`/ws/agreements/${createdAgreementId}`);
+      await page.goto(`/ws/${WORKSPACE_ID}/agreements/${createdAgreementId}`);
       await page.waitForLoadState('networkidle');
 
       // Click edit button to open sidebar

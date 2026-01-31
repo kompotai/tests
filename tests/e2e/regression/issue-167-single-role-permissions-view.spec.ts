@@ -8,11 +8,12 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Issue #167: Single Role Permissions View', { tag: ['@regression'] }, () => {
   ownerTest('clicking role header opens permissions panel @regression', async ({ page }) => {
-    // Navigate to settings access page
-    await page.goto('/ws/settings/access');
+    // Navigate directly to permissions page (access page now redirects to users)
+    await page.goto(`/ws/${WORKSPACE_ID}/settings/access/permissions`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
@@ -22,12 +23,6 @@ ownerTest.describe('Issue #167: Single Role Permissions View', { tag: ['@regress
       await acceptCookies.click();
       await page.waitForTimeout(300);
     }
-
-    // Click on Permissions tab
-    const permissionsTab = page.locator('a, button').filter({ hasText: /^Permissions$|^Права доступа$/i }).first();
-    await expect(permissionsTab).toBeVisible({ timeout: 5000 });
-    await permissionsTab.click();
-    await page.waitForTimeout(500);
 
     // Wait for permissions matrix table to load
     await page.waitForSelector('table', { timeout: 5000 });
@@ -54,8 +49,8 @@ ownerTest.describe('Issue #167: Single Role Permissions View', { tag: ['@regress
   });
 
   ownerTest('panel can be closed @regression', async ({ page }) => {
-    // Navigate to settings access page
-    await page.goto('/ws/settings/access');
+    // Navigate directly to permissions page (access page now redirects to users)
+    await page.goto(`/ws/${WORKSPACE_ID}/settings/access/permissions`);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForTimeout(1000);
 
@@ -65,12 +60,6 @@ ownerTest.describe('Issue #167: Single Role Permissions View', { tag: ['@regress
       await acceptCookies.click();
       await page.waitForTimeout(300);
     }
-
-    // Click on Permissions tab
-    const permissionsTab = page.locator('a, button').filter({ hasText: /^Permissions$|^Права доступа$/i }).first();
-    await expect(permissionsTab).toBeVisible({ timeout: 5000 });
-    await permissionsTab.click();
-    await page.waitForTimeout(500);
 
     // Wait for table
     await page.waitForSelector('table', { timeout: 5000 });

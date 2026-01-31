@@ -15,7 +15,7 @@ export abstract class BasePage {
   // Navigation
   // ============================================
 
-  abstract readonly path: string;
+  abstract get path(): string;
 
   async goto(): Promise<void> {
     await this.page.goto(this.path);

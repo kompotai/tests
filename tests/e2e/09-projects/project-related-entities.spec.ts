@@ -5,12 +5,13 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 ownerTest.describe('Project Related Entities', () => {
   ownerTest.describe('API Integration', () => {
     ownerTest('related API returns correct structure', async ({ page }) => {
       // Go to projects list
-      await page.goto('/ws/projects');
+      await page.goto(`/ws/${WORKSPACE_ID}/projects`);
       await page.waitForLoadState('networkidle');
 
       // Wait for table to load
@@ -37,7 +38,7 @@ ownerTest.describe('Project Related Entities', () => {
 
           // Call the related API directly
           const response = await page.evaluate(async (id) => {
-            const res = await fetch(`/api/projects/${id}/related`);
+            const res = await fetch(`/api/ws/megatest/projects/${id}/related`);
             return {
               ok: res.ok,
               status: res.status,
@@ -80,7 +81,7 @@ ownerTest.describe('Project Related Entities', () => {
   ownerTest.describe('View Page Layout', () => {
     ownerTest('project view page has related sections with data-testid', async ({ page }) => {
       // Go to projects list
-      await page.goto('/ws/projects');
+      await page.goto(`/ws/${WORKSPACE_ID}/projects`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(2000);
 

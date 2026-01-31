@@ -36,7 +36,7 @@ test.describe.serial('Issue #172, #173: Task Assignee Edit/Delete', () => {
     });
 
     // Find technician user by email
-    const usersResponse = await ownerContext.post('/api/users/search', {
+    const usersResponse = await ownerContext.post('/api/ws/megatest/users/search', {
       data: { search: technicianEmail, limit: 1 },
     });
     expect(usersResponse.status()).toBe(200);
@@ -45,7 +45,7 @@ test.describe.serial('Issue #172, #173: Task Assignee Edit/Delete', () => {
 
     if (!users || users.length === 0) {
       // Try searching by role instead
-      const roleResponse = await ownerContext.post('/api/users/search', {
+      const roleResponse = await ownerContext.post('/api/ws/megatest/users/search', {
         data: { roles: ['technician'], limit: 1 },
       });
       expect(roleResponse.status()).toBe(200);
@@ -63,7 +63,7 @@ test.describe.serial('Issue #172, #173: Task Assignee Edit/Delete', () => {
 
     // Create task assigned to technician (owner will be the current user)
     const taskName = `Regression Test #172 - ${Date.now()}`;
-    const response = await ownerContext.post('/api/tasks', {
+    const response = await ownerContext.post('/api/ws/megatest/tasks', {
       data: {
         title: taskName,
         assigneeId: technicianUserId,
@@ -89,13 +89,13 @@ test.describe.serial('Issue #172, #173: Task Assignee Edit/Delete', () => {
     });
 
     // First verify we can read the task
-    const getResponse = await techContext.get(`/api/tasks/${createdTaskId}`);
+    const getResponse = await techContext.get(`/api/ws/megatest/tasks/${createdTaskId}`);
     expect(getResponse.status()).toBe(200);
     const task = await getResponse.json();
 
     // THE KEY TEST: Technician should be able to update the task they're assigned to
     // Before the fix, this would return 403
-    const updateResponse = await techContext.patch(`/api/tasks/${createdTaskId}`, {
+    const updateResponse = await techContext.patch(`/api/ws/megatest/tasks/${createdTaskId}`, {
       data: {
         title: `${task.title} - Updated by assignee`,
       },
@@ -121,7 +121,7 @@ test.describe.serial('Issue #172, #173: Task Assignee Edit/Delete', () => {
 
     // THE KEY TEST: Technician should be able to delete the task
     // Before the fix, this would return 403
-    const deleteResponse = await techContext.delete(`/api/tasks/${createdTaskId}`);
+    const deleteResponse = await techContext.delete(`/api/ws/megatest/tasks/${createdTaskId}`);
 
     // This should be 200, not 403
     expect(deleteResponse.status()).toBe(200);
