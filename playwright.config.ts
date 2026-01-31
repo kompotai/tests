@@ -115,6 +115,28 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 07: Invoices - invoice related entities
+    {
+      name: 'invoices',
+      testDir: './tests/e2e/07-invoices',
+      dependencies: ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 08: Jobs - job related entities
+    {
+      name: 'jobs',
+      testDir: './tests/e2e/08-jobs',
+      dependencies: ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // 09: Projects - project management and related entities
     {
       name: 'projects',
