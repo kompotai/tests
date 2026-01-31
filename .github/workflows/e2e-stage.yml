@@ -80,7 +80,7 @@ jobs:
           FORCE_SETUP: 'true'
           # Use 2 workers for parallel execution (up from 1)
           PW_WORKERS: '2'
-        run: doppler run --project kompot --config stagetest -- npx playwright test --workers=${PW_WORKERS}
+        run: doppler run --project kompot --config stagetest -- npx playwright test --workers=${PW_WORKERS} --max-failures=5
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
