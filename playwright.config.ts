@@ -72,12 +72,25 @@ export default defineConfig({
       fullyParallel: false,  // Sequential - uses test.describe.serial
       use: { ...devices['Desktop Chrome'] },
     },
-    // 03: Workspace Users - owner creates users + users verify login
+    // 03a: Workspace Users - create users and save auth states
     {
-      name: 'workspace-users',
+      name: 'workspace-users-create',
       testDir: './tests/e2e/03-workspace-users',
+      testMatch: '01-create-users.spec.ts',
       dependencies: ['company-owner'],
-      fullyParallel: false,  // Sequential - create users first, then verify
+      fullyParallel: true,  // Can create users in parallel
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 03b: Workspace Users - verify login (must wait for users to be created)
+    {
+      name: 'workspace-users-verify',
+      testDir: './tests/e2e/03-workspace-users',
+      testMatch: '02-users-login.spec.ts',
+      dependencies: ['workspace-users-create'],  // Wait for users to be created
+      fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/owner.json',
