@@ -13,10 +13,11 @@ on:
         type: string
 
 jobs:
-  e2e:
-    name: E2E Tests
+  # Setup job: runs bootstrap tests and saves auth state
+  setup:
+    name: Setup & Auth
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
@@ -74,19 +75,83 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests
+      - name: Run setup tests (super-admin, company-owner, workspace-users-create)
         env:
           DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
           FORCE_SETUP: 'true'
-          # Use 2 workers for parallel execution (up from 1)
+          PW_WORKERS: '1'
+        run: |
+          doppler run --project kompot --config stagetest -- \
+            npx playwright test \
+              --project=super-admin \
+              --project=company-owner \
+              --project=workspace-users-create \
+              --workers=1 \
+              --max-failures=3
+
+      - name: Upload auth state
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-state
+          path: .auth/
+          retention-days: 1
+
+      - name: Upload setup report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: setup-report
+          path: playwright-report/
+          retention-days: 7
+
+  # Shard 1: Agreements (heaviest - ~14 min)
+  shard-agreements:
+    name: Shard 1 - Agreements
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Download auth state
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-state
+          path: .auth/
+
+      - name: Run agreements tests
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
           PW_WORKERS: '2'
-        run: doppler run --project kompot --config stagetest -- npx playwright test --workers=${PW_WORKERS} --max-failures=5
+          SHARD_MODE: 'true'
+        run: |
+          doppler run --project kompot --config stagetest -- \
+            npx playwright test \
+              --project=agreements \
+              --workers=2 \
+              --max-failures=5
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-report
+          name: shard-1-report
           path: playwright-report/
           retention-days: 7
 
@@ -94,6 +159,129 @@ jobs:
         uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: test-results
+          name: shard-1-artifacts
+          path: test-results/
+          retention-days: 7
+
+  # Shard 2: Contacts + Opportunities (~5 min)
+  shard-contacts-opportunities:
+    name: Shard 2 - Contacts & Opportunities
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Download auth state
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-state
+          path: .auth/
+
+      - name: Run contacts and opportunities tests
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+          PW_WORKERS: '2'
+          SHARD_MODE: 'true'
+        run: |
+          doppler run --project kompot --config stagetest -- \
+            npx playwright test \
+              --project=contacts \
+              --project=opportunities \
+              --workers=2 \
+              --max-failures=5
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shard-2-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: shard-2-artifacts
+          path: test-results/
+          retention-days: 7
+
+  # Shard 3: Invoices, Jobs, Projects, Regression, Users Verify (~3 min)
+  shard-rest:
+    name: Shard 3 - Rest
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Doppler CLI
+        uses: dopplerhq/cli-action@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Download auth state
+        uses: actions/download-artifact@v4
+        with:
+          name: auth-state
+          path: .auth/
+
+      - name: Run remaining tests
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+          PW_WORKERS: '2'
+          SHARD_MODE: 'true'
+        run: |
+          doppler run --project kompot --config stagetest -- \
+            npx playwright test \
+              --project=invoices \
+              --project=jobs \
+              --project=projects \
+              --project=regression \
+              --project=workspace-users-verify \
+              --workers=2 \
+              --max-failures=5
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shard-3-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test artifacts
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: shard-3-artifacts
           path: test-results/
           retention-days: 7

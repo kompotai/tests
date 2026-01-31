@@ -1,8 +1,19 @@
 import { defineConfig, devices } from '@playwright/test';
 import * as dotenv from 'dotenv';
+import * as fs from 'fs';
 
 // Load .env as fallback (don't override Doppler/shell vars)
 dotenv.config({ override: false });
+
+// Check if running in shard mode (auth state already exists)
+// When SHARD_MODE=true, skip dependencies since auth is pre-loaded
+const isShardMode = process.env.SHARD_MODE === 'true';
+
+// Check if auth files exist (for local development with existing auth)
+const authExists = fs.existsSync('.auth/owner.json');
+
+// Skip dependencies if in shard mode OR auth already exists and we're running specific projects
+const skipDeps = isShardMode || (authExists && process.env.SKIP_DEPS === 'true');
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -18,10 +29,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  // Workers: 1 in CI to ensure proper dependency order, 4 locally
-  // Setup tests (super-admin, company-owner, workspace-users) MUST run sequentially
+  // Workers: configurable via env, default 4 locally, 1 in CI
   workers: process.env.PW_WORKERS ? parseInt(process.env.PW_WORKERS) : (process.env.CI ? 1 : 4),
-  // Stop on first failure in CI (strict fail-fast for dependencies)
+  // Stop on first failure in CI (configurable via command line --max-failures)
   maxFailures: process.env.CI ? 1 : undefined,
 
   // Reporter configuration
@@ -77,7 +87,7 @@ export default defineConfig({
       name: 'workspace-users-create',
       testDir: './tests/e2e/03-workspace-users',
       testMatch: '01-create-users.spec.ts',
-      dependencies: ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: true,  // Can create users in parallel
       use: {
         ...devices['Desktop Chrome'],
@@ -89,7 +99,7 @@ export default defineConfig({
       name: 'workspace-users-verify',
       testDir: './tests/e2e/03-workspace-users',
       testMatch: '02-users-login.spec.ts',
-      dependencies: ['workspace-users-create'],  // Wait for users to be created
+      dependencies: skipDeps ? [] : ['workspace-users-create'],
       fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
@@ -100,7 +110,7 @@ export default defineConfig({
     {
       name: 'contacts',
       testDir: './tests/e2e/04-contacts',
-      dependencies: ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: false,  // Sequential - CRUD operations can conflict with parallel execution
       use: {
         ...devices['Desktop Chrome'],
@@ -111,7 +121,7 @@ export default defineConfig({
     {
       name: 'agreements',
       testDir: './tests/e2e/05-agreements',
-      dependencies: ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: false, // Sequential - templates before agreements
       use: {
         ...devices['Desktop Chrome'],
@@ -122,7 +132,7 @@ export default defineConfig({
     {
       name: 'opportunities',
       testDir: './tests/e2e/06-opportunities',
-      dependencies: ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
@@ -133,7 +143,7 @@ export default defineConfig({
     {
       name: 'invoices',
       testDir: './tests/e2e/07-invoices',
-      dependencies: ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
@@ -144,7 +154,7 @@ export default defineConfig({
     {
       name: 'jobs',
       testDir: './tests/e2e/08-jobs',
-      dependencies: ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
@@ -155,7 +165,7 @@ export default defineConfig({
     {
       name: 'projects',
       testDir: './tests/e2e/09-projects',
-      dependencies: ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
@@ -166,7 +176,7 @@ export default defineConfig({
     {
       name: 'regression',
       testDir: './tests/e2e/regression',
-      dependencies: ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
