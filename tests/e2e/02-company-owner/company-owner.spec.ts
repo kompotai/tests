@@ -131,6 +131,8 @@ async function registerOwner(page: Page) {
 
   // Create workspace
   await page.waitForURL('**/manage**', { timeout: 20000 });
+  // Wait for the form to load before filling
+  await page.waitForSelector('input#name', { timeout: 10000 });
   await page.fill('input#name', `${WORKSPACE_ID} Workspace`);
   await page.waitForTimeout(500);
 
