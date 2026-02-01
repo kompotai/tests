@@ -172,6 +172,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 10: Events - event management
+    {
+      name: 'events',
+      testDir: './tests/e2e/10-events',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',

@@ -12,3 +12,4 @@ export { AgreementTemplatesPage, type TemplateData, type TemplateFieldData } fro
 export { PublicSigningPage, type SignerIdentity } from './PublicSigningPage';
 export { MeetingsPage } from './MeetingsPage';
 export { EmailCampaignsPage } from './EmailCampaignsPage';
+export { EventsPage } from './EventsPage';
