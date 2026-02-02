@@ -123,13 +123,7 @@ async function registerOwner(page: Page) {
   await page.locator('input[type="checkbox"]').check();
   await page.click('button[type="submit"]');
 
-  // Phone
-  await page.waitForSelector('input[type="tel"]', { timeout: 10000 });
-  await dismissCookieConsent(page);
-  await page.fill('input[type="tel"]', '5551234567');
-  await page.click('button:has-text("Continue")');
-
-  // Create workspace
+  // After registration, redirects to /manage to create workspace
   await page.waitForURL('**/manage**', { timeout: 20000 });
   // Wait for the form to load before filling
   await page.waitForSelector('input#name', { timeout: 10000 });
