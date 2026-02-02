@@ -14,7 +14,17 @@ Always respond in the same language that the developer uses to communicate with 
 
 4. **Improvements require approval**: If you see something that can be improved, first inform or ask about it. Only then, after agreement, take action.
 
-## ⛔ Git Commits — ОБЯЗАТЕЛЬНО
+## ⛔ Git — ОБЯЗАТЕЛЬНО
+
+### Ветки и параллельная работа
+
+**По умолчанию работаем в `main`.** Переключение в другую ветку требует осторожности!
+
+**ПЕРЕД переключением ветки — ОБЯЗАТЕЛЬНО:**
+1. **Спросить пользователя** — "Нужно переключиться в ветку X. В других терминалах запущен Claude Code?"
+2. **НЕ использовать `git stash`** — создаёт путаницу для других процессов
+
+### Коммиты
 
 **ЗАПРЕЩЕНО добавлять в коммиты:**
 - `Co-Authored-By:` строки (НЕ указывать AI как со-автора)
