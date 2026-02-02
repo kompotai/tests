@@ -123,24 +123,29 @@ async function registerOwner(page: Page) {
   await page.locator('input[type="checkbox"]').check();
   await page.click('button[type="submit"]');
 
-  // After registration, redirects to /manage to create workspace
+  // After registration, redirects to /manage where phone is required first
   await page.waitForURL('**/manage**', { timeout: 20000 });
   await page.waitForLoadState('networkidle');
 
-  // Debug: log current URL and page content if form not found
-  console.log(`[REG] Current URL after registration: ${page.url()}`);
+  // Phone step is required on /manage after first registration
+  console.log(`[REG] Current URL: ${page.url()}`);
 
-  // Wait for loading to complete and form to appear
-  const createWorkspaceForm = page.locator('[data-testid="create-workspace-name"]');
-  try {
-    await createWorkspaceForm.waitFor({ state: 'visible', timeout: 30000 });
-  } catch {
-    console.log(`[REG] Form not found. Page title: ${await page.title()}`);
-    console.log(`[REG] Page URL: ${page.url()}`);
-    const bodyText = await page.locator('body').innerText();
-    console.log(`[REG] Page content (first 500 chars): ${bodyText.slice(0, 500)}`);
-    throw new Error('CreateWorkspaceCard form not visible after registration');
+  // Check if phone form is shown (first time registration)
+  const phoneSubmitButton = page.locator('[data-testid="phone-form-button-submit"]');
+  const hasPhoneForm = await phoneSubmitButton.isVisible({ timeout: 5000 }).catch(() => false);
+
+  if (hasPhoneForm) {
+    console.log('[REG] Phone form detected, filling phone number');
+    await page.locator('input[type="tel"]').fill('5551234567');
+    await phoneSubmitButton.click();
+    // Wait for page to reload after phone submit
+    await page.waitForLoadState('networkidle');
+    console.log('[REG] Phone submitted, waiting for workspace form');
   }
+
+  // Now wait for CreateWorkspaceCard form
+  const createWorkspaceForm = page.locator('[data-testid="create-workspace-name"]');
+  await createWorkspaceForm.waitFor({ state: 'visible', timeout: 30000 });
 
   await createWorkspaceForm.fill(`${WORKSPACE_ID} Workspace`);
   await page.waitForTimeout(500);
