@@ -106,6 +106,16 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // Security: Role-based access control tests
+    {
+      name: 'security',
+      testDir: './tests/e2e/02-security',
+      dependencies: skipDeps ? [] : ['workspace-users-create'],
+      fullyParallel: false,  // Sequential - login first, then access tests
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
     // 04: Contacts - CRUD operations on contacts
     {
       name: 'contacts',
