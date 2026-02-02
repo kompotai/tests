@@ -87,8 +87,8 @@ export const OWNER = {
     if (process.env.WS_OWNER_PASSWORD) {
       return process.env.WS_OWNER_PASSWORD;
     }
-    // Fallback: generate from WS_ID
-    return `${WORKSPACE_ID}Owner123!`;
+    // Fallback: generate from WS_ID (capitalize first letter)
+    return `${WORKSPACE_ID.charAt(0).toUpperCase() + WORKSPACE_ID.slice(1)}Owner123!`;
   },
 };
 
@@ -98,11 +98,12 @@ export const OWNER = {
 
 function createUser(key: string, role: SystemRole): User {
   const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
+  const capitalizedWorkspace = WORKSPACE_ID.charAt(0).toUpperCase() + WORKSPACE_ID.slice(1);
   return {
     key,
     name: `${WORKSPACE_ID} ${capitalizedKey}`,
     email: `${WORKSPACE_ID}-${key}@kompot.ai`,
-    password: `${WORKSPACE_ID}${capitalizedKey}123!`,
+    password: `${capitalizedWorkspace}${capitalizedKey}123!`,
     roles: [role],
     createViaUI: true,
   };
