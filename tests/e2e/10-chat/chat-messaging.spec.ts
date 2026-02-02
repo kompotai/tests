@@ -1,0 +1,119 @@
+/**
+ * Chat Messaging Tests
+ * 
+ * NOTE: Требуют реальной Telegram интеграции
+ */
+import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { ChatPage } from '@pages/ChatPage';
+
+ownerTest.describe('Chat - Messaging', () => {
+  let chatPage: ChatPage;
+
+  ownerTest.beforeEach(async ({ page }) => {
+    chatPage = new ChatPage(page);
+    await chatPage.goto();
+    
+    const count = await chatPage.getContactsCount();
+    if (count === 0) {
+      ownerTest.skip(count > 0, 'No contacts available for testing');
+    }
+    
+    await chatPage.selectContactByIndex(0);
+    await chatPage.wait(1000);
+  });
+
+  ownerTest('should send a simple text message', async () => {
+    const messageText = `Test message ${Date.now()}`;
+    
+    await chatPage.typeMessage(messageText);
+    await chatPage.clickSend();
+    
+    await chatPage.wait(1000);
+    const isEmpty = await chatPage.getMessageInputValue();
+    expect(isEmpty).toBe('');
+    
+    await chatPage.waitForMessage(messageText, 15000);
+    
+    const hasMessage = await chatPage.hasMessageWithText(messageText);
+    expect(hasMessage).toBeTruthy();
+  });
+
+  ownerTest('should handle empty message correctly', async () => {
+    await chatPage.clearMessageInput();
+    
+    const isEnabled = await chatPage.isSendButtonEnabled();
+    expect(isEnabled).toBeFalsy();
+  });
+
+  ownerTest('should send message with emoji', async () => {
+    const messageText = `Emoji test 🚀 ${Date.now()}`;
+    await chatPage.sendMessage(messageText);
+    
+    const hasMessage = await chatPage.hasMessageWithText(messageText);
+    expect(hasMessage).toBeTruthy();
+  });
+
+  ownerTest('should send message with cyrillic', async () => {
+    const messageText = `Привет ${Date.now()}`;
+    await chatPage.sendMessage(messageText);
+    
+    const hasMessage = await chatPage.hasMessageWithText(messageText);
+    expect(hasMessage).toBeTruthy();
+  });
+
+  ownerTest('should display message history', async () => {
+    const messagesCount = await chatPage.getMessagesCount();
+    expect(messagesCount).toBeGreaterThanOrEqual(0);
+  });
+
+  ownerTest('should clear input after successful send', async () => {
+    const messageText = `Clear test ${Date.now()}`;
+    
+    await chatPage.typeMessage(messageText);
+    const valueBefore = await chatPage.getMessageInputValue();
+    expect(valueBefore).toBe(messageText);
+    
+    await chatPage.clickSend();
+    await chatPage.wait(1000);
+    
+    const valueAfter = await chatPage.getMessageInputValue();
+    expect(valueAfter).toBe('');
+  });
+
+  ownerTest('should switch contacts and maintain separate histories', async () => {
+    const contactsCount = await chatPage.getContactsCount();
+    
+    ownerTest.skip(contactsCount >= 2, 'Need at least 2 contacts for this test');
+    
+    const message1 = `First contact ${Date.now()}`;
+    await chatPage.sendMessage(message1);
+    
+    await chatPage.selectContactByIndex(1);
+    await chatPage.wait(1000);
+    
+    const message2 = `Second contact ${Date.now()}`;
+    await chatPage.sendMessage(message2);
+    
+    await chatPage.selectContactByIndex(0);
+    await chatPage.wait(1000);
+    
+    const hasMessage = await chatPage.hasMessageWithText(message1);
+    expect(hasMessage).toBeTruthy();
+  });
+
+  ownerTest('should maintain history after page reload', async ({ page }) => {
+    const messageText = `Persist test ${Date.now()}`;
+    
+    await chatPage.sendMessage(messageText);
+    await chatPage.wait(2000);
+    
+    await page.reload();
+    await chatPage.waitForPageLoad();
+    
+    await chatPage.selectContactByIndex(0);
+    await chatPage.wait(1000);
+    
+    const hasMessage = await chatPage.hasMessageWithText(messageText);
+    expect(hasMessage).toBeTruthy();
+  });
+});

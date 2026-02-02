@@ -172,6 +172,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 10: Chat - messaging and chat functionality
+    {
+      name: 'chat',
+      testDir: './tests/e2e/10-chat',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',
