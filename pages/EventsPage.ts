@@ -9,110 +9,182 @@ import { BasePage } from './BasePage';
 
 export class EventsPage extends BasePage {
   get path(): string {
-    return '/ws/events';
+    const WS_ID = process.env.WS_ID || 'megatest';
+    return `/ws/${WS_ID}/events`;
   }
 
-  // Table and list elements
+  // ============================================
+  // Main Page Elements
+  // ============================================
+
   get eventsTable(): Locator {
-    return this.page.locator('table').or(this.page.getByRole('table'));
+    return this.page.locator('[data-testid="events-table"]');
   }
 
   get emptyState(): Locator {
-    return this.page.getByText(/no events yet/i);
+    return this.page.locator('[data-testid="events-empty-state"]');
+  }
+
+  get createEventButton(): Locator {
+    return this.page.locator('[data-testid="events-button-create"]');
   }
 
   get tableRows(): Locator {
-    return this.page.locator('table tbody tr');
+    return this.page.locator('[data-testid^="events-row-"]');
   }
 
-  // Table column headers
+  // ============================================
+  // Table Column Headers
+  // ============================================
+
   get nameColumn(): Locator {
-    return this.page.getByRole('columnheader', { name: /name/i });
+    return this.page.locator('[data-testid="events-table-header-name"]');
   }
 
   get codeColumn(): Locator {
-    return this.page.getByRole('columnheader', { name: /code/i });
+    return this.page.locator('[data-testid="events-table-header-code"]');
   }
 
   get typeColumn(): Locator {
-    return this.page.getByRole('columnheader', { name: /type/i });
+    return this.page.locator('[data-testid="events-table-header-type"]');
   }
 
   get formatColumn(): Locator {
-    return this.page.getByRole('columnheader', { name: /format/i });
+    return this.page.locator('[data-testid="events-table-header-format"]');
   }
 
   get startDateColumn(): Locator {
-    return this.page.getByRole('columnheader', { name: /start date/i });
+    return this.page.locator('[data-testid="events-table-header-startDate"]');
   }
 
   get registrationsColumn(): Locator {
-    return this.page.getByRole('columnheader', { name: /registrations/i });
+    return this.page.locator('[data-testid="events-table-header-registrations"]');
   }
 
-  // Action buttons
-  get createEventButton(): Locator {
-    return this.page.getByRole('button', { name: /create event/i });
-  }
+  // ============================================
+  // Event Form Elements
+  // ============================================
 
-  // Event form elements
   get eventForm(): Locator {
-    return this.page.locator('[role="dialog"]').or(
-      this.page.locator('div', { has: this.page.getByRole('heading', { name: /new event|edit event/i }) })
-    );
+    return this.page.locator('[data-testid="event-form"]');
   }
 
   get nameInput(): Locator {
-    return this.page.getByPlaceholder(/event name/i);
+    return this.page.locator('[data-testid="event-form-input-name"]');
   }
 
   get codeInput(): Locator {
-    return this.page.getByPlaceholder(/unique event code/i);
+    return this.page.locator('[data-testid="event-form-input-code"]');
   }
 
   get typeSelect(): Locator {
-    return this.page.getByLabel(/type/i);
+    return this.page.locator('[data-testid="event-form-select-type"]');
   }
 
   get formatSelect(): Locator {
-    return this.page.getByLabel(/format/i);
+    return this.page.locator('[data-testid="event-form-select-format"]');
   }
 
   get startDateInput(): Locator {
-    return this.page.getByLabel(/start date/i);
+    return this.page.locator('[data-testid="events-form-input-startDate"]');
   }
 
   get endDateInput(): Locator {
-    return this.page.getByLabel(/end date/i);
+    return this.page.locator('[data-testid="events-form-input-endDate"]');
   }
 
   get meetingUrlInput(): Locator {
-    return this.page.getByPlaceholder(/https:\/\//i).or(this.page.getByLabel(/meeting url/i));
+    return this.page.locator('[data-testid="events-form-input-meetingUrl"]');
   }
 
   get maxAttendeesInput(): Locator {
-    return this.page.getByPlaceholder(/leave empty for unlimited/i);
+    return this.page.locator('[data-testid="events-form-input-maxAttendees"]');
   }
 
   get descriptionInput(): Locator {
-    return this.page.getByLabel(/description/i).or(this.page.getByPlaceholder(/event description/i));
+    return this.page.locator('[data-testid="event-form-input-description"]');
   }
 
   get submitButton(): Locator {
-    return this.page.getByRole('button', { name: /^cancel$/i }).locator('..').getByRole('button', { name: /create event|save/i });
+    return this.page.locator('[data-testid="event-form-button-submit"]');
   }
 
   get cancelButton(): Locator {
-    return this.page.getByRole('button', { name: /^cancel$/i });
+    return this.page.locator('[data-testid="event-form-button-cancel"]');
   }
 
-  // Search and filter
+  // ============================================
+  // Search and Filter
+  // ============================================
+
   get searchInput(): Locator {
-    return this.page.getByPlaceholder(/search events/i);
+    return this.page.locator('[data-testid="events-input-search"]');
   }
 
   get filterButton(): Locator {
-    return this.page.getByRole('button', { name: /filter/i });
+    return this.page.locator('[data-testid="events-button-filter"]');
+  }
+
+  // ============================================
+  // Helper Methods
+  // ============================================
+
+  getEventRowByName(name: string): Locator {
+    return this.page.locator('[data-testid^="events-row-"]').filter({ hasText: name });
+  }
+
+  getEditButton(eventId: string): Locator {
+    return this.page.locator(`[data-testid="events-row-${eventId}-edit"]`);
+  }
+
+  getDeleteButton(eventId: string): Locator {
+    return this.page.locator(`[data-testid="events-row-${eventId}-delete"]`);
+  }
+
+  /**
+   * Get all event names from table
+   */
+  async getAllEventNames(): Promise<string[]> {
+    const rows = await this.page.locator('[data-testid^="events-row-"]').all();
+    const names = await Promise.all(
+        rows.map(row => row.locator('td').first().textContent())
+    );
+    return names.filter(Boolean) as string[];
+  }
+
+  /**
+   * Get events count
+   */
+  async getEventsCount(): Promise<number> {
+    return await this.page.locator('[data-testid^="events-row-"]').count();
+  }
+
+  /**
+   * Verify event with specific data exists
+   */
+  async verifyEventExists(data: {
+    name: string;
+    type?: string;
+    format?: string
+  }): Promise<boolean> {
+    const row = this.getEventRowByName(data.name);
+
+    const isVisible = await row.isVisible({ timeout: 3000 }).catch(() => false);
+    if (!isVisible) return false;
+
+    if (data.type) {
+      const typeCell = row.locator('[data-testid="events-row-type"]');
+      const type = await typeCell.textContent();
+      if (!type?.includes(data.type)) return false;
+    }
+
+    if (data.format) {
+      const formatCell = row.locator('[data-testid="events-row-format"]');
+      const format = await formatCell.textContent();
+      if (!format?.includes(data.format)) return false;
+    }
+
+    return true;
   }
 
   // ============================================
@@ -120,15 +192,11 @@ export class EventsPage extends BasePage {
   // ============================================
 
   async isEventsTableVisible(): Promise<boolean> {
-    return await this.eventsTable.isVisible();
+    return await this.eventsTable.isVisible({ timeout: 3000 }).catch(() => false);
   }
 
   async isEmptyStateVisible(): Promise<boolean> {
-    return await this.emptyState.isVisible();
-  }
-
-  async getEventsCount(): Promise<number> {
-    return await this.tableRows.count();
+    return await this.emptyState.isVisible({ timeout: 3000 }).catch(() => false);
   }
 
   async areAllColumnsVisible(): Promise<boolean> {
@@ -142,14 +210,6 @@ export class EventsPage extends BasePage {
     return nameVisible && codeVisible && typeVisible && formatVisible && startDateVisible && registrationsVisible;
   }
 
-  getEventRowByName(name: string): Locator {
-    return this.page.locator('table tbody tr', { hasText: name });
-  }
-
-  getEditButton(row: Locator): Locator {
-    return row.locator('button').filter({ has: this.page.locator('svg') }).first();
-  }
-
   // ============================================
   // Form Operations
   // ============================================
@@ -159,8 +219,7 @@ export class EventsPage extends BasePage {
   }
 
   async isEventFormVisible(): Promise<boolean> {
-    const heading = this.page.getByRole('heading', { name: /new event|edit event/i });
-    return await heading.isVisible();
+    return await this.eventForm.isVisible({ timeout: 3000 }).catch(() => false);
   }
 
   async fillName(name: string): Promise<void> {
@@ -168,13 +227,11 @@ export class EventsPage extends BasePage {
   }
 
   async selectType(type: string): Promise<void> {
-    await this.typeSelect.click();
-    await this.page.getByRole('option', { name: new RegExp(type, 'i') }).click();
+    await this.typeSelect.selectOption(type);
   }
 
   async selectFormat(format: 'Online' | 'Offline'): Promise<void> {
-    await this.formatSelect.click();
-    await this.page.getByRole('option', { name: new RegExp(format, 'i') }).click();
+    await this.formatSelect.selectOption(format);
   }
 
   async fillStartDate(date: string): Promise<void> {
@@ -238,20 +295,35 @@ export class EventsPage extends BasePage {
     }
 
     await this.submitForm();
+
+    // Wait for form to close
+    await this.page.waitForLoadState('networkidle');
   }
 
   async searchEvents(query: string): Promise<void> {
     await this.searchInput.fill(query);
-    await this.page.keyboard.press('Enter');
+    await this.page.waitForLoadState('networkidle');
   }
 
   async sortByColumn(columnName: string): Promise<void> {
-    const header = this.page.getByRole('columnheader', { name: new RegExp(columnName, 'i') });
-    await header.click();
+    const columnMap: { [key: string]: Locator } = {
+      name: this.nameColumn,
+      code: this.codeColumn,
+      type: this.typeColumn,
+      format: this.formatColumn,
+      startDate: this.startDateColumn,
+      registrations: this.registrationsColumn,
+    };
+
+    const column = columnMap[columnName.toLowerCase()];
+    if (column) {
+      await column.click();
+    }
   }
 
   async clickEditEvent(eventName: string): Promise<void> {
     const row = this.getEventRowByName(eventName);
-    await row.locator('button').filter({ has: this.page.locator('svg') }).first().click();
+    const editButton = row.locator('[data-testid*="edit"]').first();
+    await editButton.click();
   }
 }
