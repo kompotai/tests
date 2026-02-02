@@ -14,9 +14,14 @@ Always respond in the same language that the developer uses to communicate with 
 
 4. **Improvements require approval**: If you see something that can be improved, first inform or ask about it. Only then, after agreement, take action.
 
-## Git Commits
+## ⛔ Git Commits — ОБЯЗАТЕЛЬНО
 
-**Do NOT add co-author line in commits for this project.** This is a tests repository, not the main product. Commit messages should be simple without the `Co-Authored-By: Claude` footer.
+**ЗАПРЕЩЕНО добавлять в коммиты:**
+- `Co-Authored-By:` строки (НЕ указывать AI как со-автора)
+- Упоминания Claude, AI, GPT в commit message
+- Автоматически генерируемые подписи
+
+**Автор коммита — только разработчик.** Git config определяет автора.
 
 ## GitHub Actions
 
