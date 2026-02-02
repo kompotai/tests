@@ -91,13 +91,16 @@ export class OpportunitiesPage extends BasePage {
     await selector.click();
     await this.wait(300);
 
-    // Type to search for test contacts
+    // Click the input to ensure dropdown opens
     const input = selector.locator('input').first();
-    await input.fill('Carol'); // Use test contact from megatest
-    await this.wait(800);
+    if (await input.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await input.click();
+    }
+    await this.wait(500);
 
+    // Select the first available contact from dropdown
     const option = this.page.locator(Selectors.common.selectOption).first();
-    if (!await option.isVisible({ timeout: 3000 }).catch(() => false)) return false;
+    if (!await option.isVisible({ timeout: 5000 }).catch(() => false)) return false;
 
     await option.click();
     await this.wait(300);
@@ -151,6 +154,63 @@ export class OpportunitiesPage extends BasePage {
     const nameCell = row.locator('td').first();
     await nameCell.click();
     await this.wait(500);
+  }
+
+  async clickRowEditByName(name: string): Promise<boolean> {
+    const row = this.page.locator(this.s.row(name)).first();
+    await row.hover();
+    const btn = row.locator('td:last-child').getByRole('button', { name: 'Edit' });
+    if (!await btn.isVisible({ timeout: 3000 }).catch(() => false)) return false;
+    await btn.click();
+    await this.page.locator(this.s.form.container).waitFor({ state: 'visible', timeout: 5000 });
+    await this.wait(500);
+    return true;
+  }
+
+  async clickRowDeleteByName(name: string): Promise<boolean> {
+    const row = this.page.locator(this.s.row(name)).first();
+    await row.hover();
+    const btn = row.locator('td:last-child').getByRole('button', { name: 'Delete' });
+    if (!await btn.isVisible({ timeout: 3000 }).catch(() => false)) return false;
+    await btn.click();
+    await this.wait(500);
+    return true;
+  }
+
+  async edit(name: string, newData: Partial<OpportunityData>): Promise<void> {
+    const opened = await this.clickRowEditByName(name);
+    if (!opened) throw new Error(`Could not open edit form for "${name}"`);
+
+    if (newData.name !== undefined) {
+      const nameInput = this.page.locator(this.s.form.name);
+      await nameInput.clear();
+      await nameInput.fill(newData.name);
+    }
+
+    if (newData.amount !== undefined) {
+      const amountInput = this.page.locator(this.s.form.amount);
+      await amountInput.clear();
+      await amountInput.fill(newData.amount.toString());
+    }
+
+    if (newData.description !== undefined) {
+      const descInput = this.page.locator('[data-testid="opportunity-form-input-description"]');
+      await descInput.clear();
+      await descInput.fill(newData.description);
+    }
+
+    await this.submitForm();
+  }
+
+  async delete(name: string): Promise<void> {
+    await this.clickRowDeleteByName(name);
+    if (await this.isConfirmDialogVisible()) {
+      await this.confirmDialog();
+    }
+    // Wait for the row to disappear (delete may happen without confirmation)
+    await this.page.locator(this.s.row(name)).first()
+      .waitFor({ state: 'hidden', timeout: 10000 })
+      .catch(() => {});
   }
 
   // ============================================
