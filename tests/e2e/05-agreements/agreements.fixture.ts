@@ -76,31 +76,51 @@ export function createAgreementWithSignatories(
 // Field Types
 // ============================================
 
+// ALL 16 FIELD TYPES supported by the system model:
+// Base Types (11): signature, initials, date, dateSigned, creationDate, text, number, checkbox, fullName, email, company
+// Dynamic Types (5): contact.name, contact.email, contact.phone, contact.address, contact.company
+//
+// UI AVAILABILITY:
+// - Document Fields: signature, initials, creationDate, text, number (5 types)
+// - Signatory Fields: all 14 types (email, company are signer data; contact.* are from Contact entity)
+
+// Document-level fields (Company side) - 5 types available in UI
+// These are filled by the document creator (company) before sending for signature
 export const DOCUMENT_FIELD_TYPES = [
-  'signature',
-  'initials',
-  'creationDate',
-  'text',
-  'number',
+  'signature',      // Company signature
+  'initials',       // Company initials
+  'creationDate',   // Auto-filled: agreement creation date
+  'text',           // Text input (e.g., contract notes)
+  'number',         // Number input (e.g., contract amount)
 ] as const;
 
+// Signatory-level fields (Client/Partner side) - 14 types available in UI
+// These are filled by each signatory when signing
 export const SIGNATORY_FIELD_TYPES = [
   // Signature fields
-  'signature',
-  'initials',
-  // Contact data fields
+  'signature',      // Signer's signature
+  'initials',       // Signer's initials
+  // Auto-fill fields (from signer form data)
+  'dateSigned',     // Auto-filled: date when signed
+  'fullName',       // Full name (from signer form)
+  'email',          // Email (from signer form)
+  'company',        // Company name (from signer form)
+  // Dynamic contact fields (auto-filled from Contact entity)
   'contact.name',
   'contact.email',
   'contact.phone',
   'contact.company',
   'contact.address',
-  // Date fields
-  'dateSigned',
-  // Input fields
-  'fullName',
-  'text',
-  'date',
-  'checkbox',
+  // Input fields (filled by signer)
+  'text',           // Text input
+  'date',           // Date input (manual)
+  'checkbox',       // Checkbox (agreement confirmation, etc.)
+] as const;
+
+// All unique field types (union - 16 total)
+export const ALL_FIELD_TYPES = [
+  ...DOCUMENT_FIELD_TYPES,
+  ...SIGNATORY_FIELD_TYPES.filter(f => !DOCUMENT_FIELD_TYPES.includes(f as any)),
 ] as const;
 
 // ============================================

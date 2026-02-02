@@ -9,6 +9,7 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { TEST_CONTACTS } from './agreements.fixture';
 import { Page } from '@playwright/test';
@@ -267,18 +268,31 @@ ownerTest.describe('Agreement Form Signers', () => {
         return;
       }
 
+      // Check how many signer roles the template has (while form is still open)
+      const signerRole3 = page.locator('[data-testid="signer-role-3"]');
+      const hasRole3 = await signerRole3.isVisible({ timeout: 1000 }).catch(() => false);
+      console.log(`[test] Template has 3rd signer role: ${hasRole3}`);
+
       const templateName = selectedTemplate.replace(/\s*\(Contract\)$/, '');
       await page.locator('button:has-text("Cancel")').click();
       await page.waitForTimeout(500);
 
+      // Only add signatories for the roles that exist
+      const signatories = hasRole3
+        ? [
+            { contactName: testContact1 },
+            { contactName: testContact2 },
+            { contactName: testContact3 },
+          ]
+        : [
+            { contactName: testContact1 },
+            { contactName: testContact2 },
+          ];
+
       const agreementId = await agreementsPage.create({
         templateName,
         title: `Edit Signers Test ${Date.now()}`,
-        signatories: [
-          { contactName: testContact1 },
-          { contactName: testContact2 },
-          { contactName: testContact3 },
-        ],
+        signatories,
       });
 
       expect(agreementId).toBeTruthy();
@@ -293,7 +307,7 @@ ownerTest.describe('Agreement Form Signers', () => {
       }
 
       // Navigate to agreement view
-      await page.goto(`/ws/agreements/${createdAgreementId}`);
+      await page.goto(`/ws/${WORKSPACE_ID}/agreements/${createdAgreementId}`);
       await page.waitForLoadState('networkidle');
 
       // Click edit button to open sidebar
@@ -327,7 +341,7 @@ ownerTest.describe('Agreement Form Signers', () => {
       }
 
       // Navigate to agreement view
-      await page.goto(`/ws/agreements/${createdAgreementId}`);
+      await page.goto(`/ws/${WORKSPACE_ID}/agreements/${createdAgreementId}`);
       await page.waitForLoadState('networkidle');
 
       // Click edit button to open sidebar

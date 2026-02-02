@@ -177,11 +177,24 @@ ownerTest.describe('Agreement Creation', () => {
       // Navigate to agreement view
       await agreementsPage.openAgreement(agreementId!);
 
-      // Verify creation date is populated (format: DD.MM.YY as shown in UI)
+      // Verify creation date is populated (format: DD.MM.YY HH:MM as shown in UI)
+      // Note: Use flexible pattern to handle timezone differences (local vs UTC can differ by ±1 day)
       const today = new Date();
-      const year2digit = String(today.getFullYear()).slice(-2);
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(today.getDate() + 1);
+
+      const formatDate = (d: Date) => {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yy = String(d.getFullYear()).slice(-2);
+        return `${dd}\\.${mm}\\.${yy}`;
+      };
+
+      // Allow for today, yesterday, or tomorrow due to timezone differences
       const expectedDatePattern = new RegExp(
-        `${String(today.getDate()).padStart(2, '0')}\\.${String(today.getMonth() + 1).padStart(2, '0')}\\.${year2digit}`
+        `(${formatDate(yesterday)}|${formatDate(today)}|${formatDate(tomorrow)})`
       );
 
       // Look for the date on the page (in the "Created:" section)

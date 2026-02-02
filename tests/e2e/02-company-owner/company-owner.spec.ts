@@ -1,7 +1,7 @@
 /**
  * Company Owner Tests
  *
- * CI Mode:  Cleanup → Register → DB Verification → UI Tests
+ * CI Mode:  Cleanup → Register → Create Contacts → DB Verification → UI Tests
  * Tester Mode: Login → UI Tests (cleanup и DB тесты пропускаются)
  */
 
@@ -16,6 +16,13 @@ if (!fs.existsSync(AUTH_DIR)) {
   fs.mkdirSync(AUTH_DIR, { recursive: true });
 }
 
+// Test contacts required for agreements E2E tests
+const TEST_CONTACTS = [
+  { name: 'Carol Lopez', email: 'carol.lopez@megatest.kompot.ai' },
+  { name: 'Thomas Walker', email: 'thomas.walker@megatest.kompot.ai' },
+  { name: 'Nancy Moore', email: 'nancy.moore@megatest.kompot.ai' },
+];
+
 // ============================================
 // Helpers
 // ============================================
@@ -25,6 +32,49 @@ async function dismissCookieConsent(page: Page) {
   if (await btn.isVisible({ timeout: 1000 }).catch(() => false)) {
     await btn.click();
     await btn.waitFor({ state: 'hidden', timeout: 2000 }).catch(() => {});
+  }
+}
+
+/**
+ * Create test contacts in workspace database
+ * Called AFTER workspace registration to ensure contacts aren't deleted by cleanup
+ */
+async function createTestContacts(): Promise<void> {
+  if (!hasMongoDBAccess()) {
+    console.log('⏭️  Test contacts creation пропущен (Tester Mode)');
+    return;
+  }
+
+  const { MongoClient, ObjectId } = await import('mongodb');
+  const client = new MongoClient(process.env.MONGODB_URI!);
+
+  try {
+    await client.connect();
+    const db = client.db(`ws_${WORKSPACE_ID}`);
+    const contacts = db.collection('contacts');
+
+    console.log('📋 Создание тестовых контактов:');
+    for (const contact of TEST_CONTACTS) {
+      const existing = await contacts.findOne({ name: contact.name });
+
+      if (!existing) {
+        await contacts.insertOne({
+          _id: new ObjectId(),
+          name: contact.name,
+          emails: [{ address: contact.email, isVerified: true, isSubscribed: true }],
+          phones: [],
+          addresses: [],
+          ownerId: new ObjectId(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        console.log(`    ✅ Created test contact: ${contact.name}`);
+      } else {
+        console.log(`    ✓  Test contact exists: ${contact.name}`);
+      }
+    }
+  } finally {
+    await client.close();
   }
 }
 
@@ -81,6 +131,8 @@ async function registerOwner(page: Page) {
 
   // Create workspace
   await page.waitForURL('**/manage**', { timeout: 20000 });
+  // Wait for the form to load before filling
+  await page.waitForSelector('input#name', { timeout: 10000 });
   await page.fill('input#name', `${WORKSPACE_ID} Workspace`);
   await page.waitForTimeout(500);
 
@@ -164,11 +216,12 @@ test.describe.serial('Company Owner', () => {
     const forceSetup = process.env.FORCE_SETUP === 'true';
 
     if (forceSetup && IS_CI_MODE) {
-      console.log('\n📋 FORCE_SETUP: Cleanup → Register\n');
+      console.log('\n📋 FORCE_SETUP: Cleanup → Register → Create Contacts\n');
       context = await browser.newContext({ baseURL: process.env.BASE_URL });
       page = await context.newPage();
       await cleanupWorkspace();
       await registerOwner(page);
+      await createTestContacts(); // Create contacts AFTER workspace exists
     } else {
       // Обычный режим - пробуем auth state, затем password login
       console.log('\n📋 Login в существующий workspace\n');

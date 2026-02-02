@@ -1,7 +1,7 @@
 {
   "pageWidth": 595,
   "pageHeight": 842,
-  "generatedAt": "2026-01-28T15:09:55.647Z",
+  "generatedAt": "2026-01-29T19:28:28.622Z",
   "description": "Field coordinates in editor units (top-left origin). Use these values directly for field positioning.",
   "page1": [
     {
@@ -127,35 +127,53 @@
       "name": "Full Name",
       "type": "fullName",
       "page": 2,
-      "x": 280,
+      "x": 250,
       "y": 482,
-      "width": 220,
+      "width": 150,
+      "height": 30
+    },
+    {
+      "name": "Signer Email",
+      "type": "email",
+      "page": 2,
+      "x": 420,
+      "y": 482,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Signer Company",
+      "type": "company",
+      "page": 2,
+      "x": 50,
+      "y": 532,
+      "width": 180,
       "height": 30
     },
     {
       "name": "Text Input",
       "type": "text",
       "page": 2,
-      "x": 50,
-      "y": 562,
-      "width": 180,
+      "x": 280,
+      "y": 532,
+      "width": 120,
       "height": 30
     },
     {
       "name": "Date Input",
       "type": "date",
       "page": 2,
-      "x": 300,
-      "y": 562,
-      "width": 140,
+      "x": 420,
+      "y": 532,
+      "width": 120,
       "height": 30
     },
     {
       "name": "Checkbox",
       "type": "checkbox",
       "page": 2,
-      "x": 500,
-      "y": 567,
+      "x": 50,
+      "y": 637,
       "width": 25,
       "height": 25
     }
@@ -237,35 +255,53 @@
       "name": "Full Name",
       "type": "fullName",
       "page": 3,
-      "x": 280,
+      "x": 250,
       "y": 482,
-      "width": 220,
+      "width": 150,
+      "height": 30
+    },
+    {
+      "name": "Signer Email",
+      "type": "email",
+      "page": 3,
+      "x": 420,
+      "y": 482,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Signer Company",
+      "type": "company",
+      "page": 3,
+      "x": 50,
+      "y": 532,
+      "width": 180,
       "height": 30
     },
     {
       "name": "Text Input",
       "type": "text",
       "page": 3,
-      "x": 50,
-      "y": 562,
-      "width": 180,
+      "x": 280,
+      "y": 532,
+      "width": 120,
       "height": 30
     },
     {
       "name": "Date Input",
       "type": "date",
       "page": 3,
-      "x": 300,
-      "y": 562,
-      "width": 140,
+      "x": 420,
+      "y": 532,
+      "width": 120,
       "height": 30
     },
     {
       "name": "Checkbox",
       "type": "checkbox",
       "page": 3,
-      "x": 500,
-      "y": 567,
+      "x": 50,
+      "y": 637,
       "width": 25,
       "height": 25
     }

@@ -8,6 +8,7 @@
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { TEST_CONTACTS } from './agreements.fixture';
 import { Page } from '@playwright/test';
@@ -149,7 +150,7 @@ ownerTest.describe('Agreement Edit', () => {
     }
 
     // Navigate to agreement view
-    await page.goto(`/ws/agreements/${createdAgreementId}`);
+    await page.goto(`/ws/${WORKSPACE_ID}/agreements/${createdAgreementId}`);
     await page.waitForLoadState('networkidle');
 
     // Click edit button
@@ -159,7 +160,7 @@ ownerTest.describe('Agreement Edit', () => {
     await expect(page.locator('[data-testid="agreement-form"]')).toBeVisible({ timeout: 10000 });
 
     // Verify form is in a slide-over (not a separate page - URL should not change)
-    expect(page.url()).toContain(`/ws/agreements/${createdAgreementId}`);
+    expect(page.url()).toContain(`/ws/${WORKSPACE_ID}/agreements/${createdAgreementId}`);
     expect(page.url()).not.toContain('/edit');
 
     console.log('[test] Edit sidebar opened successfully');
@@ -172,7 +173,7 @@ ownerTest.describe('Agreement Edit', () => {
     }
 
     // Navigate to agreement view
-    await page.goto(`/ws/agreements/${createdAgreementId}`);
+    await page.goto(`/ws/${WORKSPACE_ID}/agreements/${createdAgreementId}`);
     await page.waitForLoadState('networkidle');
 
     // Dismiss cookie banner if present
@@ -216,7 +217,7 @@ ownerTest.describe('Agreement Edit', () => {
     }
 
     // Navigate to agreement view
-    await page.goto(`/ws/agreements/${createdAgreementId}`);
+    await page.goto(`/ws/${WORKSPACE_ID}/agreements/${createdAgreementId}`);
     await page.waitForLoadState('networkidle');
 
     // Verify page loaded

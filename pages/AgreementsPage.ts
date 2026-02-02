@@ -7,6 +7,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 export interface SignatoryData {
   roleId?: string;
@@ -24,7 +25,7 @@ export interface AgreementData {
 }
 
 export class AgreementsPage extends BasePage {
-  readonly path = '/ws/agreements';
+  get path() { return `/ws/${WORKSPACE_ID}/agreements`; }
 
   private get selectors() {
     return Selectors.agreements;
@@ -94,10 +95,10 @@ export class AgreementsPage extends BasePage {
       await this.wait(2000);
 
       // Check if multi-signer form is visible (has signer-role elements)
-      // Wait up to 30 seconds for the multi-signer form to appear (parallel tests cause slow loads)
+      // Wait up to 5 seconds for the multi-signer form to appear
       console.log(`[create] Waiting for multi-signer form...`);
-      await this.page.locator('[data-testid^="signer-role-"]').first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {
-        console.log(`[create] Warning: signer-role elements not found after 30s`);
+      await this.page.locator('[data-testid^="signer-role-"]').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+        console.log(`[create] Warning: signer-role elements not found after 5s`);
       });
       const multiSignerForm = await this.page.locator('[data-testid^="signer-role-"]').count();
       console.log(`[create] Multi-signer form detected: ${multiSignerForm > 0}, signers: ${data.signatories.length}`);
@@ -185,14 +186,13 @@ export class AgreementsPage extends BasePage {
     await input.click();
     await this.wait(300);
 
-    // Type to search
-    await input.fill('');
-    await input.pressSequentially(contactName, { delay: 30 });
-    console.log(`[selectSignatoryContact] Typed contact name, waiting for dropdown...`);
+    // Type to search - use fill() for faster input
+    await input.fill(contactName);
+    console.log(`[selectSignatoryContact] Filled contact name, waiting for search results...`);
 
-    // Wait for dropdown container with results
+    // Wait for dropdown option with the specific contact (handles debounce + API delay)
     const dropdown = this.page.locator('.absolute.z-10 button, div[class*="absolute"] button').filter({ hasText: contactName }).first();
-    await dropdown.waitFor({ state: 'visible', timeout: 10000 });
+    await dropdown.waitFor({ state: 'visible', timeout: 15000 });
     console.log(`[selectSignatoryContact] Dropdown option visible`);
 
     // Log dropdown structure for debugging
@@ -217,14 +217,13 @@ export class AgreementsPage extends BasePage {
     await searchInput.click();
     await this.wait(300);
 
-    // Type to search
-    await searchInput.fill('');
-    await searchInput.pressSequentially(contactName, { delay: 30 });
-    console.log(`[searchAndSelectContact] Typed "${contactName}", waiting for dropdown...`);
+    // Type to search - use fill() for faster input
+    await searchInput.fill(contactName);
+    console.log(`[searchAndSelectContact] Filled "${contactName}", waiting for search results...`);
 
-    // Wait for dropdown container with results
+    // Wait for dropdown option with the specific contact (handles debounce + API delay)
     const dropdown = this.page.locator('.absolute.z-10 button').filter({ hasText: contactName }).first();
-    await dropdown.waitFor({ state: 'visible', timeout: 10000 });
+    await dropdown.waitFor({ state: 'visible', timeout: 15000 });
     console.log(`[searchAndSelectContact] Dropdown option visible`);
 
     // Click directly with page.click
@@ -235,11 +234,43 @@ export class AgreementsPage extends BasePage {
   }
 
   async submitForm(): Promise<void> {
+    console.log('[submitForm] Starting form submission...');
+
+    // Check for any validation errors before submitting
+    const errorBanner = this.page.locator('.bg-red-50, [role="alert"]').first();
+    const hasError = await errorBanner.isVisible({ timeout: 500 }).catch(() => false);
+    if (hasError) {
+      const errorText = await errorBanner.textContent();
+      console.log(`[submitForm] Form has error: ${errorText}`);
+    }
+
+    // Find and click submit button
     const submitButton = this.page.locator(this.selectors.form.submit);
     await submitButton.scrollIntoViewIfNeeded();
+
+    // Check if button is enabled
+    const isDisabled = await submitButton.isDisabled();
+    console.log(`[submitForm] Submit button disabled: ${isDisabled}`);
+
     await submitButton.click({ force: true });
+    console.log('[submitForm] Clicked submit button');
+
+    // Wait a moment for any error messages to appear
+    await this.wait(1000);
+
+    // Check for validation errors after submission
+    const postSubmitError = await this.page.locator('.bg-red-50, [role="alert"]').first()
+      .textContent({ timeout: 2000 })
+      .catch(() => null);
+
+    if (postSubmitError) {
+      console.log(`[submitForm] Post-submit error: ${postSubmitError}`);
+    }
+
     // Wait for redirect to agreement view page (longer timeout for parallel tests)
+    console.log('[submitForm] Waiting for URL redirect...');
     await this.page.waitForURL(/\/agreements\/[a-f0-9]+/, { timeout: 45000 });
+    console.log(`[submitForm] Redirected to: ${this.page.url()}`);
     await this.waitForPageLoad();
   }
 
@@ -250,7 +281,7 @@ export class AgreementsPage extends BasePage {
   async openAgreement(identifier: string): Promise<void> {
     // If identifier looks like a MongoDB ObjectId, navigate directly
     if (/^[a-f0-9]{24}$/.test(identifier)) {
-      await this.page.goto(`/ws/agreements/${identifier}`);
+      await this.page.goto(`/ws/${WORKSPACE_ID}/agreements/${identifier}`);
       await this.page.waitForURL(/\/agreements\/[a-f0-9]+/, { timeout: 10000 });
       await this.waitForPageLoad();
       return;
@@ -391,26 +422,121 @@ export class AgreementsPage extends BasePage {
 
   async waitForPdfToLoad(): Promise<boolean> {
     // Wait for PDF to fully load (canvas visible, no error)
-    try {
-      // First check for error
-      const error = await this.getPdfError();
-      if (error) {
-        console.log(`[waitForPdfToLoad] PDF error: ${error}`);
-        return false;
+    const maxAttempts = 5;
+    const attemptDelay = 3000;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        console.log(`[waitForPdfToLoad] Attempt ${attempt}/${maxAttempts}`);
+
+        // Check for error
+        const error = await this.getPdfError();
+        if (error) {
+          console.log(`[waitForPdfToLoad] PDF error: ${error}`);
+          return false;
+        }
+
+        // Check if still in loading state
+        const loadingText = await this.page.locator('[data-testid="document-preview"]').locator('text=Loading').isVisible({ timeout: 1000 }).catch(() => false);
+        if (loadingText) {
+          console.log(`[waitForPdfToLoad] Still loading document, waiting...`);
+          await this.wait(attemptDelay);
+          continue;
+        }
+
+        // Check for PDF.js loading state
+        const pdfLoadingText = await this.page.locator('text=Loading PDF').isVisible({ timeout: 1000 }).catch(() => false);
+        if (pdfLoadingText) {
+          console.log(`[waitForPdfToLoad] PDF.js loading, waiting...`);
+          await this.wait(attemptDelay);
+          continue;
+        }
+
+        // Wait for canvas with longer timeout - try multiple selectors
+        // The canvas might be inside nested containers
+        const canvasSelectors = [
+          '[data-testid="document-preview"] canvas',
+          '[data-testid="document-preview"] [data-page] canvas',
+          '[data-testid="document-preview"] .shadow-lg canvas',
+        ];
+
+        let canvas = null;
+        let canvasVisible = false;
+
+        for (const selector of canvasSelectors) {
+          const canvasElement = this.page.locator(selector).first();
+          canvasVisible = await canvasElement.isVisible({ timeout: 2000 }).catch(() => false);
+          if (canvasVisible) {
+            canvas = canvasElement;
+            console.log(`[waitForPdfToLoad] Found canvas with selector: ${selector}`);
+            break;
+          }
+        }
+
+        if (!canvasVisible) {
+          console.log(`[waitForPdfToLoad] Canvas not visible yet`);
+          // Check DOM structure for debugging
+          const pageCount = await this.page.locator('[data-testid="document-preview"] [data-page]').count().catch(() => 0);
+          const canvasCount = await this.page.locator('[data-testid="document-preview"] canvas').count().catch(() => 0);
+          console.log(`[waitForPdfToLoad] Pages found: ${pageCount}, Canvases found: ${canvasCount}`);
+
+          // Check first canvas dimensions and visibility state
+          if (canvasCount > 0) {
+            const firstCanvas = this.page.locator('[data-testid="document-preview"] canvas').first();
+            const bbox = await firstCanvas.boundingBox().catch(() => null);
+            const isAttached = await firstCanvas.isEnabled().catch(() => false);
+            console.log(`[waitForPdfToLoad] First canvas - bbox: ${JSON.stringify(bbox)}, attached: ${isAttached}`);
+
+            // Check if canvas might be visible with different method
+            const canvasEvaluate = await this.page.evaluate(() => {
+              const preview = document.querySelector('[data-testid="document-preview"]');
+              const canvases = preview?.querySelectorAll('canvas');
+              if (!canvases || canvases.length === 0) return { found: false };
+              const first = canvases[0];
+              const rect = first.getBoundingClientRect();
+              const style = window.getComputedStyle(first);
+              return {
+                found: true,
+                count: canvases.length,
+                width: rect.width,
+                height: rect.height,
+                display: style.display,
+                visibility: style.visibility,
+                opacity: style.opacity,
+                canvasWidth: first.width,
+                canvasHeight: first.height,
+              };
+            }).catch(() => ({ found: false, error: 'evaluate failed' }));
+            console.log(`[waitForPdfToLoad] Canvas evaluate: ${JSON.stringify(canvasEvaluate)}`);
+          }
+
+          const previewContent = await this.page.locator('[data-testid="document-preview"]').textContent({ timeout: 1000 }).catch(() => 'no content');
+          console.log(`[waitForPdfToLoad] Preview content: ${previewContent?.substring(0, 100)}`);
+          await this.wait(attemptDelay);
+          continue;
+        }
+
+        // Canvas is visible, check if rendered with content
+        if (canvas) {
+          const box = await canvas.boundingBox();
+          if (box && box.width > 200 && box.height > 200) {
+            console.log(`[waitForPdfToLoad] PDF rendered successfully (${box.width}x${box.height})`);
+            return true;
+          }
+
+          console.log(`[waitForPdfToLoad] Canvas too small: ${box?.width}x${box?.height}`);
+        }
+        await this.wait(attemptDelay);
+      } catch (e) {
+        console.log(`[waitForPdfToLoad] Attempt ${attempt} error: ${e}`);
+        if (attempt < maxAttempts) {
+          await this.wait(attemptDelay);
+        }
       }
-
-      // Wait for canvas
-      const canvas = this.page.locator('[data-testid="document-preview"] canvas');
-      await canvas.waitFor({ state: 'visible', timeout: 15000 });
-
-      // Verify canvas has content
-      const rendered = await this.isPdfRendered();
-      console.log(`[waitForPdfToLoad] PDF rendered: ${rendered}`);
-      return rendered;
-    } catch (e) {
-      console.log(`[waitForPdfToLoad] Failed: ${e}`);
-      return false;
     }
+
+    console.log(`[waitForPdfToLoad] Failed after ${maxAttempts} attempts`);
+    return false;
   }
 
   async shouldSeeStatus(status: string): Promise<void> {
@@ -424,25 +550,28 @@ export class AgreementsPage extends BasePage {
   async selectMultiSignerContact(order: number, contactName: string): Promise<void> {
     console.log(`[selectMultiSignerContact] Selecting "${contactName}" for signer order ${order}`);
 
-    // Find the signer role section - wait longer for signer as form may still be loading
+    // Find the signer role section
     const signerRole = this.page.locator(this.selectors.form.signerRole(order));
-    await signerRole.waitFor({ state: 'visible', timeout: 30000 });
+    await signerRole.waitFor({ state: 'visible', timeout: 10000 });
 
     // Find the contact input within this role
     const contactInput = this.page.locator(this.selectors.form.signerContactInput(order));
     await contactInput.click();
     await this.wait(300);
 
-    // Type to search
-    await contactInput.fill('');
-    await contactInput.pressSequentially(contactName, { delay: 30 });
-    console.log(`[selectMultiSignerContact] Typed "${contactName}", waiting for dropdown...`);
+    // Type to search - use fill() for faster input
+    await contactInput.fill(contactName);
+    console.log(`[selectMultiSignerContact] Filled "${contactName}", waiting for search results...`);
 
-    // Wait for dropdown and click option
+    // Wait for dropdown with the specific contact option to appear
+    // This handles both debounce delay (300ms) and API response time
     const dropdown = this.page.locator(this.selectors.form.signerContactDropdown(order));
-    await dropdown.waitFor({ state: 'visible', timeout: 10000 });
-
     const option = dropdown.locator(`button:has-text("${contactName}")`).first();
+
+    // Wait for the specific option to appear (handles slow API on stage)
+    await option.waitFor({ state: 'visible', timeout: 15000 });
+    console.log(`[selectMultiSignerContact] Found contact option, clicking...`);
+
     await option.click();
     console.log(`[selectMultiSignerContact] Selected contact`);
     await this.wait(500);
@@ -546,6 +675,88 @@ export class AgreementsPage extends BasePage {
     const nameEl = card.locator('.font-medium').first();
     const name = await nameEl.textContent();
     return name?.trim() || '';
+  }
+
+  // ============================================
+  // Signing Link Management
+  // ============================================
+
+  async generateSigningLink(signerIndex: number): Promise<{ link: string; code: string }> {
+    const getLinkBtn = this.page.locator(this.selectors.view.getSigningLink(signerIndex));
+    await getLinkBtn.click();
+
+    // Wait for link to be generated
+    await this.wait(3000);
+
+    const signerCard = this.page.locator(this.selectors.view.signerCard(signerIndex));
+
+    // Get the signing URL
+    const urlElement = signerCard.locator('.font-mono').first();
+    await urlElement.waitFor({ state: 'visible', timeout: 10000 });
+    const link = (await urlElement.textContent()) || '';
+
+    // Get the verification code - look for "Verification code: XXXXXX" specifically
+    const codeElement = signerCard.locator('text=/Verification code:\\s*\\d{6}/i');
+    const codeText = await codeElement.textContent().catch(() => '');
+    const code = codeText?.match(/\d{6}/)?.[0] || '';
+
+    console.log(`[generateSigningLink] Generated link for signer ${signerIndex}: ${link.substring(0, 50)}...`);
+    console.log(`[generateSigningLink] Verification code: ${code}`);
+
+    return { link, code };
+  }
+
+  async regenerateSigningLink(signerIndex: number): Promise<{ link: string; code: string }> {
+    const regenerateBtn = this.page.locator(this.selectors.view.regenerateSigningLink(signerIndex));
+    await regenerateBtn.click();
+
+    // Wait for new link to be generated
+    await this.wait(3000);
+
+    const signerCard = this.page.locator(this.selectors.view.signerCard(signerIndex));
+
+    // Get the new signing URL
+    const urlElement = signerCard.locator('.font-mono').first();
+    const link = (await urlElement.textContent()) || '';
+
+    // Get the new verification code - look for "Verification code: XXXXXX" specifically
+    const codeElement = signerCard.locator('text=/Verification code:\\s*\\d{6}/i');
+    const codeText = await codeElement.textContent().catch(() => '');
+    const code = codeText?.match(/\d{6}/)?.[0] || '';
+
+    console.log(`[regenerateSigningLink] Regenerated link for signer ${signerIndex}`);
+    console.log(`[regenerateSigningLink] New verification code: ${code}`);
+
+    return { link, code };
+  }
+
+  async getSigningLinkInfo(signerIndex: number): Promise<{ link: string; code: string } | null> {
+    const signerCard = this.page.locator(this.selectors.view.signerCard(signerIndex));
+
+    // Check if link is already generated
+    const urlElement = signerCard.locator('.font-mono').first();
+    const hasLink = await urlElement.isVisible({ timeout: 1000 }).catch(() => false);
+
+    if (!hasLink) {
+      return null;
+    }
+
+    const link = (await urlElement.textContent()) || '';
+
+    // Get the verification code - look for "Verification code: XXXXXX" specifically
+    const codeElement = signerCard.locator('text=/Verification code:\\s*\\d{6}/i');
+    const codeText = await codeElement.textContent().catch(() => '');
+    const code = codeText?.match(/\d{6}/)?.[0] || '';
+
+    return { link, code };
+  }
+
+  async getSignerStatus(signerIndex: number): Promise<string> {
+    const signerCard = this.page.locator(this.selectors.view.signerCard(signerIndex));
+    const statusBadge = signerCard.locator('text=/Pending|Sent|Viewed|Signed|Declined|Awaiting/i').first();
+
+    const status = await statusBadge.textContent({ timeout: 5000 }).catch(() => '');
+    return status?.trim() || '';
   }
 
   // ============================================

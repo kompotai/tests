@@ -2,7 +2,7 @@ export const ContactsSelectors = {
   heading: 'h1:has-text("Contacts"), [data-testid="contacts-heading"]',
   table: '[data-testid="contacts-table"], table',
   emptyState: 'text="Contact not found"',
-  createButton: '[data-testid="contacts-create-button"], button:has-text("Create Contact")',
+  createButton: '[data-testid="contacts-button-create"], button:has-text("Create Contact")',
   searchInput: '[data-testid="contacts-search"], input[placeholder*="search" i]',
 
   form: {

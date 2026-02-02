@@ -9,7 +9,7 @@
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { ContactsPage } from '@pages/ContactsPage';
-import { createFullContact, uniqueName, uniqueEmail } from './contacts.fixture';
+import { createFullContact, uniqueName, uniqueEmail, uniqueRuPhone, createContact } from './contacts.fixture';
 
 ownerTest.describe('Contact Edit', () => {
   let contactsPage: ContactsPage;
@@ -237,6 +237,101 @@ ownerTest.describe('Contact Edit', () => {
       // Original name should still be there
       await contactsPage.shouldSeeContact(contact.name);
       await contactsPage.shouldNotSeeContact(newName);
+    });
+  });
+
+  // ============================================
+  // Phone Country Code Preservation
+  // ============================================
+
+  ownerTest.describe('Phone Country Code', () => {
+    ownerTest('preserves Russian phone country when editing contact', async ({ page }) => {
+      // Create contact with Russian phone number
+      const ruPhone = uniqueRuPhone();
+      const contact = createContact({
+        name: uniqueName('RU Phone'),
+        phones: [ruPhone],
+      });
+      await contactsPage.create(contact);
+
+      // Open edit form
+      await contactsPage.clickRowEdit(contact.name);
+
+      // Check that phone input value contains full Russian phone number
+      const phoneInput = page.locator('[data-testid="contact-form-input-phone-0"]').first();
+
+      // Verify it's a full Russian phone number (not just country code)
+      // Russian phones: +7 followed by formatted number like (999) 582-74-80
+      await expect(phoneInput).toHaveValue(/^\+7\s*\(?9/);
+
+      // Save without changes
+      await contactsPage.submitForm();
+
+      // Open full page view and verify phone is still Russian
+      await contactsPage.openFullPageView(contact.name);
+
+      // Phone should still show Russian format (+7)
+      const phoneOnPage = page.locator('a[href^="tel:+7"]').first();
+      await expect(phoneOnPage).toBeVisible();
+    });
+
+    ownerTest('preserves US phone country when editing contact', async ({ page }) => {
+      // Create contact with US phone number
+      const contact = createFullContact(); // uses uniquePhone() which is US format
+      await contactsPage.create(contact);
+
+      // Open edit form
+      await contactsPage.clickRowEdit(contact.name);
+
+      // Check that phone input value contains +1 (US country code)
+      const phoneInput = page.locator('[data-testid="contact-form-input-phone-0"]').first();
+      await expect(phoneInput).toHaveValue(/^\+1/);
+
+      // Save without changes
+      await contactsPage.submitForm();
+
+      // Open full page view and verify phone is still US
+      await contactsPage.openFullPageView(contact.name);
+
+      // Phone should still show US format (+1)
+      const phoneOnPage = page.locator('a[href^="tel:+1"]').first();
+      await expect(phoneOnPage).toBeVisible();
+    });
+
+    ownerTest('does not change phone country after editing other fields', async ({ page }) => {
+      // Create contact with Russian phone
+      const ruPhone = uniqueRuPhone();
+      const contact = createContact({
+        name: uniqueName('RU Phone Edit'),
+        phones: [ruPhone],
+        company: 'Original Company',
+      });
+      await contactsPage.create(contact);
+
+      // Open edit form and change company name (not phone)
+      await contactsPage.clickRowEdit(contact.name);
+
+      // Verify Russian phone is shown
+      const phoneInput = page.locator('[data-testid="contact-form-input-phone-0"]').first();
+      await expect(phoneInput).toHaveValue(/^\+7/);
+
+      // Edit company field
+      const companyInput = page.locator('[data-testid="contact-form-input-company"], input[name="company"]').first();
+      await companyInput.clear();
+      await companyInput.fill('Updated Company');
+
+      // Save
+      await contactsPage.submitForm();
+
+      // Open full page view and verify phone is still Russian
+      await contactsPage.openFullPageView(contact.name);
+
+      // Phone should still be Russian
+      const phoneOnPage = page.locator('a[href^="tel:+7"]').first();
+      await expect(phoneOnPage).toBeVisible();
+
+      // Company should be updated
+      await expect(page.getByText('Updated Company').first()).toBeVisible();
     });
   });
 });

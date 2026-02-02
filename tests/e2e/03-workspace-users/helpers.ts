@@ -20,7 +20,7 @@ export async function dismissCookieConsent(page: Page) {
 
 export async function createUserViaUI(page: Page, user: User) {
   // Navigate to Settings > Users
-  await page.goto('/ws/settings/users');
+  await page.goto(`/ws/${WORKSPACE_ID}/settings/users`);
   await page.waitForLoadState('networkidle');
   await dismissCookieConsent(page);
 
@@ -32,7 +32,7 @@ export async function createUserViaUI(page: Page, user: User) {
   }
 
   // Click "Add User"
-  await page.click('[data-testid="add-user-button"], button:has-text("Add User"), button:has-text("Add")');
+  await page.click('[data-testid="users-button-create"], button:has-text("Add User"), button:has-text("Add")');
   await page.waitForSelector('[data-testid="user-form"]', { timeout: 5000 });
 
   // Fill form

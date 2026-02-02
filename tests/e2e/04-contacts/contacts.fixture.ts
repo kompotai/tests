@@ -32,6 +32,12 @@ export function uniquePhone(): string {
   return `+1202${suffix.slice(0, 3)}${suffix.slice(3, 7).padEnd(4, '0')}`;
 }
 
+/** Generate unique phone (Russian format) */
+export function uniqueRuPhone(): string {
+  const suffix = uniqueSuffix();
+  return `+7999${suffix.slice(0, 3)}${suffix.slice(3, 7).padEnd(4, '0')}`;
+}
+
 // ============================================
 // Minimal Contact (only required fields)
 // ============================================

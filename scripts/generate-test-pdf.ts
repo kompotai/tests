@@ -51,6 +51,8 @@ function pdfToEditorX(pdfX: number): number {
 }
 
 // Page 1: Document Fields (Company Side) - Blue
+// Contains ALL 5 document-level field types available in UI: signature, initials, creationDate, text, number
+// Note: email and company are only available for Signatory Fields (filled from signer data)
 const PAGE1_FIELDS: FieldDef[] = [
   { name: 'Company Signature', type: 'signature', pdfX: 50, pdfY: 620, width: 200, height: 60 },
   { name: 'Company Initials', type: 'initials', pdfX: 350, pdfY: 620, width: 80, height: 50 },
@@ -60,20 +62,30 @@ const PAGE1_FIELDS: FieldDef[] = [
 ];
 
 // Page 2: Signatory 1 Fields (Client) - Green
-// Note: Checkbox moved to be inline with Text/Date row for better E2E test accessibility
+// Contains ALL 14 signatory field types available in UI:
+// - Signature: signature, initials
+// - Auto-fill from signer: dateSigned, fullName, email, company
+// - Dynamic from contact: contact.name, contact.email, contact.phone, contact.company, contact.address
+// - Input: text, date, checkbox
 const PAGE2_FIELDS: FieldDef[] = [
+  // Contact data fields (dynamic - from Contact entity)
   { name: 'Contact Name', type: 'contact.name', pdfX: 50, pdfY: 700, width: 180, height: 35 },
   { name: 'Contact Email', type: 'contact.email', pdfX: 300, pdfY: 700, width: 220, height: 35 },
   { name: 'Contact Phone', type: 'contact.phone', pdfX: 50, pdfY: 620, width: 150, height: 35 },
   { name: 'Contact Company', type: 'contact.company', pdfX: 280, pdfY: 620, width: 180, height: 35 },
   { name: 'Contact Address', type: 'contact.address', pdfX: 50, pdfY: 540, width: 400, height: 35 },
+  // Signature fields
   { name: 'Signature', type: 'signature', pdfX: 50, pdfY: 430, width: 200, height: 60 },
   { name: 'Initials', type: 'initials', pdfX: 350, pdfY: 430, width: 80, height: 50 },
+  // Auto-fill fields (from signer form data)
   { name: 'Date Signed', type: 'dateSigned', pdfX: 50, pdfY: 330, width: 120, height: 30 },
-  { name: 'Full Name', type: 'fullName', pdfX: 280, pdfY: 330, width: 220, height: 30 },
-  { name: 'Text Input', type: 'text', pdfX: 50, pdfY: 250, width: 180, height: 30 },
-  { name: 'Date Input', type: 'date', pdfX: 300, pdfY: 250, width: 140, height: 30 },
-  { name: 'Checkbox', type: 'checkbox', pdfX: 500, pdfY: 250, width: 25, height: 25 },  // Moved to be on same row as Text/Date
+  { name: 'Full Name', type: 'fullName', pdfX: 250, pdfY: 330, width: 150, height: 30 },
+  { name: 'Signer Email', type: 'email', pdfX: 420, pdfY: 330, width: 120, height: 30 },
+  { name: 'Signer Company', type: 'company', pdfX: 50, pdfY: 280, width: 180, height: 30 },
+  // Input fields
+  { name: 'Text Input', type: 'text', pdfX: 280, pdfY: 280, width: 120, height: 30 },
+  { name: 'Date Input', type: 'date', pdfX: 420, pdfY: 280, width: 120, height: 30 },
+  { name: 'Checkbox', type: 'checkbox', pdfX: 50, pdfY: 180, width: 25, height: 25 },
 ];
 
 // Page 3: Signatory 2 Fields (Partner) - Pink (same positions as Page 2)

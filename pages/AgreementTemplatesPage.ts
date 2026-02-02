@@ -7,6 +7,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
+import { WORKSPACE_ID } from '@fixtures/users';
 import path from 'path';
 
 export interface TemplateFieldData {
@@ -48,7 +49,7 @@ export interface TemplateData {
 }
 
 export class AgreementTemplatesPage extends BasePage {
-  readonly path = '/ws/agreements';
+  get path() { return `/ws/${WORKSPACE_ID}/agreements`; }
 
   private get selectors() {
     return Selectors.agreementTemplates;
@@ -150,15 +151,41 @@ export class AgreementTemplatesPage extends BasePage {
         ? data.pdfPath
         : path.join(process.cwd(), data.pdfPath);
 
+      console.log(`[fillForm] Uploading PDF from: ${absolutePath}`);
+
       // The file input is hidden inside a label
       const fileInput = this.page.locator('input[type="file"][accept*="pdf"]').first();
       await fileInput.setInputFiles(absolutePath);
 
-      // Wait for upload to complete (uploading indicator should disappear)
-      await this.page.waitForSelector('text=Uploading', { state: 'hidden', timeout: 30000 }).catch(() => {
-        // If "Uploading" text never appeared, the upload was quick
+      // Wait for upload to complete:
+      // 1. Spinner appears (bg-blue-50 with animate-spin)
+      // 2. Spinner disappears and completed state shows (bg-zinc-50)
+      console.log('[fillForm] Waiting for upload spinner...');
+
+      // First, wait for upload to start (spinner appears) - short timeout as it should be quick
+      await this.page.locator('.animate-spin').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {
+        console.log('[fillForm] Upload spinner not detected - upload may be very fast or failed to start');
       });
-      await this.wait(1000);
+
+      // Then wait for spinner to disappear (upload complete)
+      console.log('[fillForm] Waiting for upload to complete...');
+      await this.page.locator('.animate-spin').waitFor({ state: 'hidden', timeout: 60000 }).catch(() => {
+        console.log('[fillForm] Warning: spinner did not disappear within timeout');
+      });
+
+      // Verify upload completed successfully - look for the completed state indicator
+      // (bg-zinc-50 border with FileUp icon, not bg-blue-50 with spinner)
+      const uploadedIndicator = this.page.locator('.bg-zinc-50.border-zinc-200').first();
+      const isUploaded = await uploadedIndicator.isVisible().catch(() => false);
+      console.log(`[fillForm] Upload completed: ${isUploaded}`);
+
+      if (!isUploaded) {
+        // Take screenshot for debugging
+        await this.page.screenshot({ path: 'test-results/upload-failed.png' }).catch(() => {});
+        console.log('[fillForm] WARNING: PDF upload may have failed - indicator not found');
+      }
+
+      await this.wait(500);
     }
   }
 
@@ -266,7 +293,11 @@ export class AgreementTemplatesPage extends BasePage {
     await this.wait(500);
 
     // Find the PDF viewer container (div that wraps the canvas)
-    const pdfContainer = this.page.locator('.relative.mx-auto.shadow-lg').first();
+    // Try both old and new selectors for compatibility
+    let pdfContainer = this.page.locator('.relative.shadow-lg.bg-white').first();
+    if (!(await pdfContainer.isVisible({ timeout: 1000 }).catch(() => false))) {
+      pdfContainer = this.page.locator('.relative.mx-auto.shadow-lg').first();
+    }
     const containerBox = await pdfContainer.boundingBox();
     if (!containerBox) {
       throw new Error('Could not find PDF container');

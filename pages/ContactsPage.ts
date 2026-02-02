@@ -5,6 +5,7 @@
 import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 export interface ContactAddress {
   line1?: string;
@@ -33,7 +34,7 @@ export interface ContactData {
 }
 
 export class ContactsPage extends BasePage {
-  readonly path = '/ws/contacts';
+  get path() { return `/ws/${WORKSPACE_ID}/contacts`; }
 
   private get selectors() {
     return Selectors.contacts;
@@ -53,7 +54,7 @@ export class ContactsPage extends BasePage {
   async search(query: string): Promise<void> {
     const url = `${this.path}?search=${encodeURIComponent(query)}`;
     await this.page.goto(url);
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
     await this.wait(500);
   }
 
@@ -102,7 +103,26 @@ export class ContactsPage extends BasePage {
         }
         const phoneField = this.page.locator(this.selectors.form.phone(i)).first();
         if (await phoneField.isVisible({ timeout: 2000 }).catch(() => false)) {
-          await phoneField.fill(data.phones[i]);
+          // For react-international-phone: select country first, then enter local number
+          const phone = data.phones[i];
+          const countrySelect = this.page.locator('.phone-input-country select').first();
+          if (phone.startsWith('+7') && phone.length > 3) {
+            // Russian number: select Russia, enter local part
+            await countrySelect.selectOption('ru');
+            await this.wait(200);
+            const localPart = phone.slice(2); // Remove +7 prefix
+            // Use click + pressSequentially to avoid fill() resetting React state
+            await phoneField.click();
+            await phoneField.pressSequentially(localPart, { delay: 30 });
+          } else if (phone.startsWith('+1') && phone.length > 3) {
+            // US number: already default, enter local part
+            await phoneField.click();
+            await phoneField.pressSequentially(phone.slice(2), { delay: 30 });
+          } else {
+            // Other formats: try direct fill
+            await phoneField.fill(phone);
+          }
+          await this.wait(200);
         }
       }
     }
@@ -264,7 +284,7 @@ export class ContactsPage extends BasePage {
     const viewButton = this.page.locator(this.selectors.rowViewButton(identifier)).first();
     await viewButton.click();
     await this.page.waitForURL(/\/contacts\/[a-f0-9]+/, { timeout: 10000 });
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
   async clickRowEdit(identifier: string): Promise<void> {
