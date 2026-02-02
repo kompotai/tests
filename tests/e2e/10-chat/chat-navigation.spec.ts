@@ -18,7 +18,7 @@ ownerTest.describe('Chat - Navigation & UI', () => {
   });
 
   ownerTest('should display search input', async ({ page }) => {
-    const searchInput = page.locator('input[placeholder*="Search"]');
+    const searchInput = page.locator('[data-testid="chat-input-search"]');
     await expect(searchInput).toBeVisible();
   });
 
@@ -48,28 +48,27 @@ ownerTest.describe('Chat - Navigation & UI', () => {
 
   ownerTest('should highlight selected contact', async ({ page }) => {
     const count = await chatPage.getContactsCount();
-    
+
     if (count > 0) {
       await chatPage.selectContactByIndex(0);
-      await chatPage.wait(500);
-      
-      const activeContact = await page
-        .locator('[data-testid*="chat-contact-item-"].bg-blue-50')
-        .isVisible();
-      expect(activeContact).toBeTruthy();
+
+      const activeContact = page.locator('[data-testid*="chat-contact-item-"].bg-blue-50');
+      await expect(activeContact).toBeVisible({ timeout: 5000 });
     }
   });
 
   ownerTest('should filter contacts by search', async () => {
     const initialCount = await chatPage.getContactsCount();
-    
+
     if (initialCount > 0) {
       await chatPage.searchContact('xyz123nonexistent');
-      await chatPage.wait(500);
-      
+
+      // Verify no contacts shown for non-existent search
+      const noResultsCount = await chatPage.getContactsCount();
+      expect(noResultsCount).toBe(0);
+
       await chatPage.clearSearch();
-      await chatPage.wait(500);
-      
+
       const restoredCount = await chatPage.getContactsCount();
       expect(restoredCount).toBe(initialCount);
     }
@@ -77,22 +76,22 @@ ownerTest.describe('Chat - Navigation & UI', () => {
 
   ownerTest('should display message input after selecting contact', async ({ page }) => {
     const count = await chatPage.getContactsCount();
-    
+
     if (count > 0) {
       await chatPage.selectContactByIndex(0);
-      
-      const messageInput = page.locator('textarea[placeholder*="Telegram"]');
+
+      const messageInput = page.locator('[data-testid="chat-input-message"]');
       await expect(messageInput).toBeVisible();
     }
   });
 
   ownerTest('should display send button', async ({ page }) => {
     const count = await chatPage.getContactsCount();
-    
+
     if (count > 0) {
       await chatPage.selectContactByIndex(0);
-      
-      const sendButton = page.locator('button:has-text("Send")');
+
+      const sendButton = page.locator('[data-testid="chat-button-send"]');
       await expect(sendButton).toBeVisible();
     }
   });
@@ -120,16 +119,16 @@ ownerTest.describe('Chat - Navigation & UI', () => {
     }
   });
 
-  ownerTest('should enable send button when text is entered', async () => {
+  ownerTest('should enable send button when text is entered', async ({ page }) => {
     const count = await chatPage.getContactsCount();
-    
+
     if (count > 0) {
       await chatPage.selectContactByIndex(0);
       await chatPage.typeMessage('Test message');
-      await chatPage.wait(300);
-      
-      const isEnabled = await chatPage.isSendButtonEnabled();
-      expect(isEnabled).toBeTruthy();
+
+      // Verify send button is enabled
+      const sendButton = page.locator('[data-testid="chat-button-send"]');
+      await expect(sendButton).toBeEnabled({ timeout: 3000 });
     }
   });
 
@@ -146,11 +145,11 @@ ownerTest.describe('Chat - Navigation & UI', () => {
 
   ownerTest('should have open card button', async ({ page }) => {
     const count = await chatPage.getContactsCount();
-    
+
     if (count > 0) {
       await chatPage.selectContactByIndex(0);
-      
-      const openCardButton = page.locator('a:has(svg.lucide-external-link)');
+
+      const openCardButton = page.locator('[data-testid="chat-button-openCard"]');
       await expect(openCardButton).toBeVisible();
     }
   });

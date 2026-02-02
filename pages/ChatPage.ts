@@ -41,31 +41,46 @@ export class ChatPage extends BasePage {
   }
 
   async selectContactById(contactId: string): Promise<void> {
-    await this.page.locator(this.selectors.contactItem(contactId)).click();
-    await this.wait(500);
+    const contact = this.page.locator(this.selectors.contactItem(contactId));
+    await contact.click();
+    // Wait for messages container or empty state to appear
+    await Promise.race([
+      this.page.locator(this.selectors.messagesContainer).waitFor({ state: 'visible' }),
+      this.page.locator(this.selectors.emptyState).waitFor({ state: 'visible' })
+    ]);
   }
 
   async selectContactByName(name: string): Promise<void> {
-    await this.page.locator(this.selectors.contactItemByName(name)).click();
-    await this.wait(500);
+    const contact = this.page.locator(this.selectors.contactItemByName(name));
+    await contact.click();
+    await Promise.race([
+      this.page.locator(this.selectors.messagesContainer).waitFor({ state: 'visible' }),
+      this.page.locator(this.selectors.emptyState).waitFor({ state: 'visible' })
+    ]);
   }
 
   async selectContactByIndex(index: number): Promise<void> {
     const contacts = await this.page.locator('[data-testid*="chat-contact-item-"]').all();
     if (contacts[index]) {
       await contacts[index].click();
-      await this.wait(500);
+      await Promise.race([
+        this.page.locator(this.selectors.messagesContainer).waitFor({ state: 'visible' }),
+        this.page.locator(this.selectors.emptyState).waitFor({ state: 'visible' })
+      ]);
     }
   }
 
   async searchContact(query: string): Promise<void> {
-    await this.page.locator(this.selectors.searchInput).fill(query);
-    await this.wait(500);
+    const searchInput = this.page.locator(this.selectors.searchInput);
+    await searchInput.fill(query);
+    // Wait for network idle after search
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
   async clearSearch(): Promise<void> {
-    await this.page.locator(this.selectors.searchInput).clear();
-    await this.wait(300);
+    const searchInput = this.page.locator(this.selectors.searchInput);
+    await searchInput.clear();
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
   // ============================================
@@ -124,13 +139,16 @@ export class ChatPage extends BasePage {
   }
 
   async clickSend(): Promise<void> {
-    await this.page.locator(this.selectors.sendButton).click();
-    await this.wait(500);
+    const sendButton = this.page.locator(this.selectors.sendButton);
+    await sendButton.click();
+    // Wait for message input to be cleared (indicates send was successful)
+    await expect(this.page.locator(this.selectors.messageInput)).toHaveValue('', { timeout: 5000 });
   }
 
   async sendMessage(text: string): Promise<void> {
     await this.typeMessage(text);
     await this.clickSend();
+    // Wait for the message to appear in the chat
     await this.waitForMessage(text, 15000);
   }
 
@@ -146,8 +164,10 @@ export class ChatPage extends BasePage {
   }
 
   async clickOpenCard(): Promise<void> {
-    await this.page.locator(this.selectors.openCardButton).click();
-    await this.wait(500);
+    const openCardButton = this.page.locator(this.selectors.openCardButton);
+    await openCardButton.click();
+    // Wait for navigation to contacts page
+    await this.page.waitForURL(/\/ws\/.*\/contacts\/.*/, { timeout: 5000 });
   }
 
   async getSelectedAccount(): Promise<string> {
