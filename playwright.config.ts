@@ -128,7 +128,18 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
-    // 06: Opportunities - CRUD operations on opportunities
+    // 06a: Email Campaigns - Email providers, templates, campaigns
+    {
+      name: 'email-campaigns',
+      testDir: './tests/e2e/06-email-campaigns',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - provider setup first
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 06b: Opportunities - CRUD operations on opportunities
     {
       name: 'opportunities',
       testDir: './tests/e2e/06-opportunities',
