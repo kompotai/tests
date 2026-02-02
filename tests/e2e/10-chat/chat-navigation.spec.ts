@@ -3,11 +3,15 @@
  */
 import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { ChatPage } from '@pages/ChatPage';
+import { setupChatMocks } from '@fixtures/mocks.fixture';
 
 ownerTest.describe('Chat - Navigation & UI', () => {
   let chatPage: ChatPage;
 
   ownerTest.beforeEach(async ({ page }) => {
+    // Setup mocks for Telegram integration
+    await setupChatMocks(page);
+
     chatPage = new ChatPage(page);
     await chatPage.goto();
   });

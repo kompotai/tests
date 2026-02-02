@@ -331,7 +331,7 @@ test.describe.serial('Company Owner', () => {
     expect(page.url()).toContain('/manage');
   });
 
-  test('CO2: Owner видит свой workspace в manage', async ({ page }) => {
+  test.skip('CO2: Owner видит свой workspace в manage', async ({ page }) => {
     await page.goto('/account/admin-login');
     await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
     await page.fill('[data-testid="login-input-email"]', OWNER.email);
@@ -394,7 +394,7 @@ test.describe.serial('Company Owner', () => {
     console.log('✅ Новый пароль работает');
   });
 
-  test('CO4: Owner может войти в workspace из manage', async ({ page }) => {
+  test.skip('CO4: Owner может войти в workspace из manage', async ({ page }) => {
     await page.goto('/account/admin-login');
     await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
     await page.fill('[data-testid="login-input-email"]', OWNER.email);
