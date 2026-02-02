@@ -99,7 +99,7 @@ export default async function globalSetup() {
     : `${wsId}-owner@kompot.ai`;
   const ownerPassword = isTesterMode
     ? process.env.WS_OWNER_PASSWORD!
-    : `${wsId}Owner123!`;
+    : `${wsId.charAt(0).toUpperCase() + wsId.slice(1)}Owner123!`;
 
   // Вывод конфигурации
   console.log('═'.repeat(60));
