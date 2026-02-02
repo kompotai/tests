@@ -125,9 +125,24 @@ async function registerOwner(page: Page) {
 
   // After registration, redirects to /manage to create workspace
   await page.waitForURL('**/manage**', { timeout: 20000 });
-  // Wait for the form to load before filling
-  await page.waitForSelector('input#name', { timeout: 10000 });
-  await page.fill('input#name', `${WORKSPACE_ID} Workspace`);
+  await page.waitForLoadState('networkidle');
+
+  // Debug: log current URL and page content if form not found
+  console.log(`[REG] Current URL after registration: ${page.url()}`);
+
+  // Wait for loading to complete and form to appear
+  const createWorkspaceForm = page.locator('[data-testid="create-workspace-name"]');
+  try {
+    await createWorkspaceForm.waitFor({ state: 'visible', timeout: 30000 });
+  } catch {
+    console.log(`[REG] Form not found. Page title: ${await page.title()}`);
+    console.log(`[REG] Page URL: ${page.url()}`);
+    const bodyText = await page.locator('body').innerText();
+    console.log(`[REG] Page content (first 500 chars): ${bodyText.slice(0, 500)}`);
+    throw new Error('CreateWorkspaceCard form not visible after registration');
+  }
+
+  await createWorkspaceForm.fill(`${WORKSPACE_ID} Workspace`);
   await page.waitForTimeout(500);
 
   await page.locator('input#wsid').clear();
