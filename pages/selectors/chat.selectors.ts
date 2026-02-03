@@ -16,7 +16,6 @@ export const ChatSelectors = {
   messagesContainer: '[data-testid="chat-messages-container"]',
   messageInput: '[data-testid="chat-input-message"]',
   sendButton: '[data-testid="chat-button-send"]',
-  accountSelector: '[data-testid="chat-select-account"]',
   emptyState: '[data-testid="chat-empty-state"]',
   openCardButton: '[data-testid="chat-button-openCard"]',
 

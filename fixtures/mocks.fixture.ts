@@ -50,49 +50,6 @@ export async function mockOutboundInteractions(page: Page) {
 }
 
 /**
- * Mock Telegram Account Data
- *
- * Provides mock Telegram account for account selector
- */
-export async function mockTelegramAccounts(page: Page) {
-  // Mock contact endpoint to include Telegram data
-  await page.route('**/api/contacts/*', async (route: Route) => {
-    const request = route.request();
-    const method = request.method();
-
-    // Only intercept GET requests for contact details
-    if (method === 'GET') {
-      // Fetch the original response
-      const response = await route.fetch();
-      const originalData = await response.json();
-
-      // Add mock Telegram accounts to contact
-      const modifiedData = {
-        ...originalData,
-        telegrams: [
-          {
-            username: '@mock_test_account',
-            chatId: 'mock_chat_id_123',
-          },
-        ],
-      };
-
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(modifiedData),
-      });
-      return;
-    }
-
-    // Let other requests through
-    await route.continue();
-  });
-
-  console.log('✓ Telegram accounts mocked');
-}
-
-/**
  * Mock Socket.IO interaction:created events
  *
  * Simulates websocket events when messages are sent
@@ -146,6 +103,5 @@ export async function mockSocketEvents(page: Page) {
  */
 export async function setupChatMocks(page: Page) {
   await mockOutboundInteractions(page);
-  await mockTelegramAccounts(page);
   await mockSocketEvents(page);
 }

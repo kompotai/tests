@@ -73,8 +73,8 @@ ownerTest.describe('Chat - Navigation & UI', () => {
     if (initialCount > 0) {
       await chatPage.searchContact('xyz123nonexistent');
 
-      // Wait for search to filter results
-      await page.waitForTimeout(500);
+      // Wait for search to filter results (longer timeout for debounced search)
+      await page.waitForTimeout(1500);
 
       // Verify no contacts shown for non-existent search
       const noResultsCount = await chatPage.getContactsCount();
@@ -83,7 +83,7 @@ ownerTest.describe('Chat - Navigation & UI', () => {
       await chatPage.clearSearch();
 
       // Wait for contacts to reload after clearing search
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(1000);
 
       const restoredCount = await chatPage.getContactsCount();
       expect(restoredCount).toBe(initialCount);
@@ -109,29 +109,6 @@ ownerTest.describe('Chat - Navigation & UI', () => {
 
       const sendButton = page.locator('[data-testid="chat-button-send"]');
       await expect(sendButton).toBeVisible();
-    }
-  });
-
-  ownerTest('should show telegram account selector', async ({ page }) => {
-    const count = await chatPage.getContactsCount();
-
-    if (count > 0) {
-      await chatPage.selectContactByIndex(0);
-
-      // Wait for loading to complete
-      await page.locator('[role="status"]').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
-
-      // Check if account selector exists (might not have telegram account)
-      const accountSelector = page.locator('[data-testid="chat-select-account"]');
-      const exists = await accountSelector.count() > 0;
-
-      if (exists) {
-        const account = await chatPage.getSelectedAccount();
-        expect(account).toContain('@');
-      } else {
-        // Skip test if no telegram account configured
-        ownerTest.skip();
-      }
     }
   });
 

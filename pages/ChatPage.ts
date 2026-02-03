@@ -171,11 +171,4 @@ export class ChatPage extends BasePage {
     // Wait for navigation to contacts page
     await this.page.waitForURL(/\/ws\/.*\/contacts\/.*/, { timeout: 5000 });
   }
-
-  async getSelectedAccount(): Promise<string> {
-    const username = await this.page.locator(this.selectors.accountSelector)
-      .textContent()
-      .catch(() => '');
-    return username?.trim() || '';
-  }
 }
