@@ -211,6 +211,7 @@ export default defineConfig({
       fullyParallel: false,
       use: {
         ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
       },
     },
   ],

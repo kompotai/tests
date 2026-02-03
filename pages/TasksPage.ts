@@ -2,7 +2,7 @@
  * Tasks Page Object
  */
 
-import { Page, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
 
@@ -16,7 +16,7 @@ export interface TaskData {
 }
 
 export class TasksPage extends BasePage {
-  readonly path = `/ws/${process.env.WS_ID || 'testlubas'}/tasks`;
+  readonly path = `/ws/${process.env.WS_MEGATEST_ID || 'megatest'}/tasks`;
 
   private get s() {
     return Selectors.tasks;
@@ -38,9 +38,18 @@ export class TasksPage extends BasePage {
   }
 
   async search(query: string): Promise<void> {
-    await this.page.goto(`${this.path}?search=${encodeURIComponent(query)}`);
-    await this.page.waitForLoadState('networkidle');
-    await this.wait(500);
+    await this.goto();
+    const searchInput = this.page.locator(this.s.searchInput).first();
+
+    if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await searchInput.fill(query);
+      await searchInput.press('Enter');
+      await this.page.waitForLoadState('networkidle');
+    } else {
+      // Fallback to URL-based search if no search input
+      await this.page.goto(`${this.path}?search=${encodeURIComponent(query)}`);
+      await this.page.waitForLoadState('networkidle');
+    }
   }
 
   // ============================================
@@ -48,8 +57,11 @@ export class TasksPage extends BasePage {
   // ============================================
 
   async openCreateForm(): Promise<void> {
-    await this.page.locator(this.s.createButton).click();
-    await this.wait(500);
+    const createBtn = this.page.locator(this.s.createButton).first();
+    await createBtn.click();
+    // Wait for form to appear
+    const formContainer = this.page.locator(this.s.form.container).first();
+    await formContainer.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async create(data: TaskData): Promise<void> {
@@ -63,22 +75,14 @@ export class TasksPage extends BasePage {
   }
 
   async fillForm(data: TaskData): Promise<void> {
-    // Wait for form container to be visible (dialog or form wrapper)
-    const formContainer = this.page.locator(this.s.form.container).first();
-    await formContainer.waitFor({ state: 'visible', timeout: 5000 });
-    await this.wait(500); // Extra wait for form to fully render
-
     // Find name input using the selector from selectors file
     const nameField = this.page.locator(this.s.form.name).first();
     await nameField.waitFor({ state: 'visible', timeout: 5000 });
 
     // Focus and fill using pressSequentially for better React compatibility
     await nameField.click();
-    await this.wait(200);
     await nameField.clear();
-    await this.wait(100);
     await nameField.pressSequentially(data.name, { delay: 30 });
-    await this.wait(500);
 
     if (data.description) {
       const descField = this.page.locator(this.s.form.description).first();
@@ -116,9 +120,9 @@ export class TasksPage extends BasePage {
       await field.selectOption({ label: value });
     } else {
       await field.click();
-      await this.wait(300);
       const option = this.page.locator(`[role="option"]:has-text("${value}")`).first();
-      if (await option.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+      if (await option.isVisible().catch(() => false)) {
         await option.click();
       }
     }
@@ -130,38 +134,32 @@ export class TasksPage extends BasePage {
 
     await field.click();
     await field.fill(assignee);
-    await this.wait(500);
 
     const option = this.page.locator(Selectors.common.selectOption).first();
-    if (await option.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+    if (await option.isVisible().catch(() => false)) {
       await option.click();
     }
   }
 
   async submitForm(): Promise<void> {
-    // Wait for any toasts to auto-dismiss
-    await this.wait(500);
-
     // Dismiss cookie banner if visible (it can block clicks)
     const cookieAcceptBtn = this.page.locator('button:has-text("Accept All")');
-    if (await cookieAcceptBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+    if (await cookieAcceptBtn.isVisible({ timeout: 500 }).catch(() => false)) {
       await cookieAcceptBtn.click();
-      await this.wait(300);
     }
 
     // Find and click submit button using data-testid
     const submitBtn = this.page.locator('[data-testid="task-form-button-submit"]').first();
     await submitBtn.scrollIntoViewIfNeeded();
     await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
-    await submitBtn.click({ force: true }); // Force click to bypass any remaining overlays
+    await submitBtn.click({ force: true });
 
     // Wait for form to close (indicates successful submission)
-    await this.wait(1000);
     const formContainer = this.page.locator(this.s.form.container).first();
     await formContainer.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
     await this.waitForSpinner();
-    await this.wait(1000);
   }
 
   async edit(identifier: string, newData: Partial<TaskData>): Promise<void> {
@@ -169,6 +167,7 @@ export class TasksPage extends BasePage {
 
     if (newData.name) {
       const nameInput = this.page.locator(this.s.form.name).first();
+      await nameInput.waitFor({ state: 'visible', timeout: 5000 });
       await nameInput.clear();
       await nameInput.fill(newData.name);
     }
@@ -222,7 +221,9 @@ export class TasksPage extends BasePage {
   async clickRowEdit(identifier: string): Promise<void> {
     const row = this.getRow(identifier);
     await row.locator(this.s.rowEditButton).click();
-    await this.wait(1000);
+    // Wait for form to appear
+    const formContainer = this.page.locator(this.s.form.container).first();
+    await formContainer.waitFor({ state: 'visible', timeout: 5000 });
   }
 
   async clickRowDelete(identifier: string): Promise<void> {
@@ -231,7 +232,8 @@ export class TasksPage extends BasePage {
 
     if (await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       await deleteBtn.click();
-      await this.wait(500);
+      // Wait for potential confirm dialog
+      await this.page.waitForTimeout(300); // Brief wait for dialog animation
     }
   }
 

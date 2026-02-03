@@ -7,13 +7,8 @@
  * T4: Delete Task
  */
 
-import { test, expect, chromium, Browser, BrowserContext, Page } from '@playwright/test';
-import { OWNER, WORKSPACE_ID } from '@fixtures/users';
+import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { TasksPage, TaskData } from '@pages/index';
-import * as path from 'path';
-import * as fs from 'fs';
-
-const AUTH_DIR = path.join(__dirname, '../../../.auth');
 
 // ============================================
 // Test Data
@@ -23,58 +18,24 @@ const generateTaskName = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}`;
 
 // ============================================
-// Helpers
-// ============================================
-
-async function loginOwner(page: Page): Promise<void> {
-  // Login to workspace
-  await page.goto('/account/login');
-  await page.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
-
-  await page.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
-  await page.fill('[data-testid="login-input-email"]', OWNER.email);
-  await page.fill('[data-testid="login-input-password"]', OWNER.password);
-  await page.click('[data-testid="login-button-submit"]');
-
-  await page.waitForURL(/\/(ws|manage)/, { timeout: 20000 });
-
-  // Navigate to workspace
-  await page.goto(`/ws/${WORKSPACE_ID}`);
-  await page.waitForLoadState('networkidle');
-}
-
-// ============================================
 // T1: View Tasks List
 // ============================================
 
-test.describe('T1: View Tasks List', () => {
-  test.describe.configure({ mode: 'serial' });
+ownerTest.describe('T1: View Tasks List', () => {
+  ownerTest.describe.configure({ mode: 'serial' });
 
-  let browser: Browser;
-  let context: BrowserContext;
-  let page: Page;
   let tasksPage: TasksPage;
 
-  test.beforeAll(async () => {
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ baseURL: process.env.BASE_URL });
-    page = await context.newPage();
-    await loginOwner(page);
+  ownerTest.beforeEach(async ({ page }) => {
     tasksPage = new TasksPage(page);
   });
 
-  test.afterAll(async () => {
-    await page.close();
-    await context.close();
-    await browser.close();
-  });
-
-  test('T1-AC1: User can see tasks list after login', async () => {
+  ownerTest('T1-AC1: User can see tasks list after login', async () => {
     await tasksPage.goto();
     await tasksPage.shouldSeeText('All Tasks');
   });
 
-  test('T1-AC2: Tasks display columns (name, status, priority)', async () => {
+  ownerTest('T1-AC2: Tasks display columns (name, status, priority)', async ({ page }) => {
     await tasksPage.goto();
 
     // Проверяем наличие таблицы или empty state
@@ -90,8 +51,9 @@ test.describe('T1: View Tasks List', () => {
     }
   });
 
-  test('T1-AC3: Empty state shown when no tasks', async () => {
+  ownerTest('T1-AC3: Empty state shown when no tasks', async ({ page }) => {
     // Поиск несуществующей задачи
+    await tasksPage.goto();
     await tasksPage.search('nonexistent-task-xyz-12345');
 
     // Должен быть empty state или сообщение о ненайденных задачах
@@ -102,11 +64,11 @@ test.describe('T1: View Tasks List', () => {
     const hasNoResults = await noResults.isVisible({ timeout: 2000 }).catch(() => false);
     const hasTable = await tasksPage.shouldSeeTable();
 
-    // Либо empty state, либо пустая таблица, либо сообщение о 0 результатах
+    // Либо empty state, либо пустая таблица, либо сообщение о 0 результатов
     expect(hasEmptyState || hasNoResults || !hasTable).toBe(true);
   });
 
-  test('T1-AC4: Pagination works', async () => {
+  ownerTest('T1-AC4: Pagination works', async ({ page }) => {
     await tasksPage.goto();
 
     // Pagination может отсутствовать если задач мало
@@ -120,10 +82,13 @@ test.describe('T1: View Tasks List', () => {
       // Пробуем перейти на следующую страницу
       await tasksPage.goToNextPage();
       await page.waitForLoadState('networkidle');
+      // Verify pagination worked
+      await expect(page.locator('nav[aria-label="pagination"], [data-testid="tasks-pagination"]').first())
+        .toBeVisible();
+    } else {
+      // Skip if no pagination available
+      ownerTest.skip();
     }
-
-    // Тест проходит в любом случае — pagination опционален
-    expect(true).toBe(true);
   });
 });
 
@@ -131,30 +96,17 @@ test.describe('T1: View Tasks List', () => {
 // T2: Create Task
 // ============================================
 
-test.describe('T2: Create Task', () => {
-  test.describe.configure({ mode: 'serial' });
+ownerTest.describe('T2: Create Task', () => {
+  ownerTest.describe.configure({ mode: 'serial' });
 
-  let browser: Browser;
-  let context: BrowserContext;
-  let page: Page;
   let tasksPage: TasksPage;
   let createdTaskName: string;
 
-  test.beforeAll(async () => {
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ baseURL: process.env.BASE_URL });
-    page = await context.newPage();
-    await loginOwner(page);
+  ownerTest.beforeEach(async ({ page }) => {
     tasksPage = new TasksPage(page);
   });
 
-  test.afterAll(async () => {
-    await page.close();
-    await context.close();
-    await browser.close();
-  });
-
-  test('T2-AC1: Open task creation form', async () => {
+  ownerTest('T2-AC1: Open task creation form', async () => {
     await tasksPage.goto();
     await tasksPage.openCreateForm();
 
@@ -162,7 +114,7 @@ test.describe('T2: Create Task', () => {
     expect(formVisible).toBe(true);
   });
 
-  test('T2-AC2: Create task with name only', async () => {
+  ownerTest('T2-AC2: Create task with name only', async () => {
     createdTaskName = generateTaskName('MinimalTask');
 
     await tasksPage.goto();
@@ -173,7 +125,7 @@ test.describe('T2: Create Task', () => {
     await tasksPage.shouldSeeTask(createdTaskName);
   });
 
-  test('T2-AC3: Create task with all fields', async () => {
+  ownerTest('T2-AC3: Create task with all fields', async () => {
     const fullTaskName = generateTaskName('FullTask');
     const fullTaskData: TaskData = {
       name: fullTaskName,
@@ -190,14 +142,11 @@ test.describe('T2: Create Task', () => {
     await tasksPage.shouldSeeTask(fullTaskName);
   });
 
-  test('T2-AC4: Validation errors for invalid data', async () => {
+  ownerTest('T2-AC4: Validation errors for invalid data', async ({ page }) => {
     await tasksPage.goto();
     await tasksPage.openCreateForm();
 
     // Wait for form to appear
-    await page.waitForTimeout(500);
-
-    // Clear the name field (use correct selector - input#title)
     const nameField = page.locator('input#title').first();
     await nameField.waitFor({ state: 'visible', timeout: 5000 });
     await nameField.clear();
@@ -205,7 +154,6 @@ test.describe('T2: Create Task', () => {
     // Try to submit with empty name
     const submitBtn = page.locator('[data-testid="task-form-button-submit"]').first();
     await submitBtn.click({ force: true });
-    await page.waitForTimeout(500);
 
     // Check that validation error appears or form stays open
     const formStillVisible = await tasksPage.shouldSeeForm();
@@ -218,7 +166,7 @@ test.describe('T2: Create Task', () => {
     expect(formStillVisible || hasError).toBe(true);
   });
 
-  test('T2-AC5: Created task appears in list', async () => {
+  ownerTest('T2-AC5: Created task appears in list', async () => {
     // Используем задачу из T2-AC2
     await tasksPage.goto();
     await tasksPage.search(createdTaskName);
@@ -230,36 +178,31 @@ test.describe('T2: Create Task', () => {
 // T3: Edit Task
 // ============================================
 
-test.describe('T3: Edit Task', () => {
-  test.describe.configure({ mode: 'serial' });
+ownerTest.describe('T3: Edit Task', () => {
+  ownerTest.describe.configure({ mode: 'serial' });
 
-  let browser: Browser;
-  let context: BrowserContext;
-  let page: Page;
   let tasksPage: TasksPage;
   let taskToEdit: string;
   let updatedTaskName: string;
 
-  test.beforeAll(async () => {
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ baseURL: process.env.BASE_URL });
-    page = await context.newPage();
-    await loginOwner(page);
-    tasksPage = new TasksPage(page);
-
+  ownerTest.beforeAll(async ({ browser }) => {
     // Create a task specifically for edit tests
+    const context = await browser.newContext({ storageState: '.auth/owner.json' });
+    const page = await context.newPage();
+    const setupTasksPage = new TasksPage(page);
+
     taskToEdit = generateTaskName('EditTest');
-    await tasksPage.goto();
-    await tasksPage.createMinimal(taskToEdit);
-  });
+    await setupTasksPage.goto();
+    await setupTasksPage.createMinimal(taskToEdit);
 
-  test.afterAll(async () => {
-    await page.close();
     await context.close();
-    await browser.close();
   });
 
-  test('T3-AC1: Open task edit form', async () => {
+  ownerTest.beforeEach(async ({ page }) => {
+    tasksPage = new TasksPage(page);
+  });
+
+  ownerTest('T3-AC1: Open task edit form', async () => {
     await tasksPage.goto();
     await tasksPage.shouldSeeTask(taskToEdit);
 
@@ -270,7 +213,7 @@ test.describe('T3: Edit Task', () => {
     expect(formVisible).toBe(true);
   });
 
-  test('T3-AC2: Edit task name', async () => {
+  ownerTest('T3-AC2: Edit task name', async () => {
     updatedTaskName = generateTaskName('UpdatedTask');
 
     await tasksPage.goto();
@@ -285,17 +228,19 @@ test.describe('T3: Edit Task', () => {
     taskToEdit = updatedTaskName;
   });
 
-  test('T3-AC3: Edit task description', async () => {
+  ownerTest('T3-AC3: Edit task description', async ({ page }) => {
+    const newDescription = 'Updated description';
+
     await tasksPage.goto();
     await tasksPage.search(taskToEdit);
-    await tasksPage.edit(taskToEdit, { description: 'Updated description' });
+    await tasksPage.edit(taskToEdit, { description: newDescription });
 
-    // Задача должна остаться в списке
+    // Verify task is still visible after edit
     await tasksPage.search(taskToEdit);
     await tasksPage.shouldSeeTask(taskToEdit);
   });
 
-  test('T3-AC4: Edit task priority', async () => {
+  ownerTest('T3-AC4: Edit task priority', async () => {
     await tasksPage.goto();
     await tasksPage.search(taskToEdit);
     await tasksPage.edit(taskToEdit, { priority: 'High' });
@@ -305,7 +250,7 @@ test.describe('T3: Edit Task', () => {
     await tasksPage.shouldSeeTask(taskToEdit);
   });
 
-  test('T3-AC5: Edit task status', async () => {
+  ownerTest('T3-AC5: Edit task status', async () => {
     await tasksPage.goto();
     await tasksPage.search(taskToEdit);
     await tasksPage.edit(taskToEdit, { status: 'In Progress' });
@@ -315,7 +260,7 @@ test.describe('T3: Edit Task', () => {
     await tasksPage.shouldSeeTask(taskToEdit);
   });
 
-  test('T3-AC7: Changes saved successfully', async () => {
+  ownerTest('T3-AC7: Changes saved successfully', async () => {
     // Финальная проверка — задача существует после всех изменений
     await tasksPage.goto();
     await tasksPage.search(taskToEdit);
@@ -327,35 +272,30 @@ test.describe('T3: Edit Task', () => {
 // T4: Delete Task
 // ============================================
 
-test.describe('T4: Delete Task', () => {
-  test.describe.configure({ mode: 'serial' });
+ownerTest.describe('T4: Delete Task', () => {
+  ownerTest.describe.configure({ mode: 'serial' });
 
-  let browser: Browser;
-  let context: BrowserContext;
-  let page: Page;
   let tasksPage: TasksPage;
   let taskToDelete: string;
 
-  test.beforeAll(async () => {
-    browser = await chromium.launch({ headless: true });
-    context = await browser.newContext({ baseURL: process.env.BASE_URL });
-    page = await context.newPage();
-    await loginOwner(page);
-    tasksPage = new TasksPage(page);
-
+  ownerTest.beforeAll(async ({ browser }) => {
     // Create a task specifically for deletion tests
+    const context = await browser.newContext({ storageState: '.auth/owner.json' });
+    const page = await context.newPage();
+    const setupTasksPage = new TasksPage(page);
+
     taskToDelete = generateTaskName('DeleteTest');
-    await tasksPage.goto();
-    await tasksPage.createMinimal(taskToDelete);
-  });
+    await setupTasksPage.goto();
+    await setupTasksPage.createMinimal(taskToDelete);
 
-  test.afterAll(async () => {
-    await page.close();
     await context.close();
-    await browser.close();
   });
 
-  test('T4-AC1: Initiate task deletion', async () => {
+  ownerTest.beforeEach(async ({ page }) => {
+    tasksPage = new TasksPage(page);
+  });
+
+  ownerTest('T4-AC1: Initiate task deletion', async ({ page }) => {
     await tasksPage.goto();
     await tasksPage.shouldSeeTask(taskToDelete);
 
@@ -367,38 +307,39 @@ test.describe('T4: Delete Task', () => {
     expect(deleteBtnVisible).toBe(true);
   });
 
-  test('T4-AC2: Delete confirmation dialog', async () => {
+  ownerTest('T4-AC2: Delete confirmation dialog', async () => {
     await tasksPage.goto();
 
     // Click delete on existing task
     await tasksPage.clickRowDelete(taskToDelete);
 
-    // Проверяем диалог подтверждения (может появиться или нет)
+    // Проверяем диалог подтверждения
     const dialogVisible = await tasksPage.isConfirmDialogVisible();
 
     if (dialogVisible) {
       // Отменяем удаление
       await tasksPage.cancelDialog();
+      expect(dialogVisible).toBe(true);
+    } else {
+      // Skip if dialog not implemented
+      ownerTest.skip();
     }
-
-    // Тест проходит — проверили что кнопка удаления работает
-    expect(true).toBe(true);
   });
 
-  test('T4-AC3: Task removed after confirmation', async () => {
+  ownerTest('T4-AC3: Task removed after confirmation', async ({ page }) => {
     await tasksPage.goto();
     await tasksPage.search(taskToDelete);
     await tasksPage.delete(taskToDelete);
 
-    // Ждём обновления списка
-    await page.waitForTimeout(1000);
+    // Wait for list to update
+    await page.waitForLoadState('networkidle');
 
     // Проверяем что задача удалена
     await tasksPage.search(taskToDelete);
     await tasksPage.shouldNotSeeTask(taskToDelete);
   });
 
-  test('T4-AC4: Task list updates after deletion', async () => {
+  ownerTest('T4-AC4: Task list updates after deletion', async () => {
     // Verify task list is visible and has tasks
     await tasksPage.goto();
 
