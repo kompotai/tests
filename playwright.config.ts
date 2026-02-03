@@ -171,10 +171,10 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
-    // 08: Payments - payment CRUD and workflows
+    // 11: Payments - payment access and workflows
     {
       name: 'payments',
-      testDir: './tests/e2e/08-payments',
+      testDir: './tests/e2e/11-payments',
       dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: false, // Sequential - payment operations depend on each other
       use: {

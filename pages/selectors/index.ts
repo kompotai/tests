@@ -7,6 +7,8 @@ import { ContactsSelectors } from './contacts.selectors';
 import { OpportunitiesSelectors } from './opportunities.selectors';
 import { CommonSelectors } from './common.selectors';
 import { AgreementsSelectors, AgreementTemplatesSelectors } from './agreements.selectors';
+import { InvoicesSelectors } from './invoices.selectors';
+import { PaymentsSelectors } from './payments.selectors';
 
 export const Selectors = {
   login: LoginSelectors,
@@ -15,6 +17,8 @@ export const Selectors = {
   common: CommonSelectors,
   agreements: AgreementsSelectors,
   agreementTemplates: AgreementTemplatesSelectors,
+  invoices: InvoicesSelectors,
+  payments: PaymentsSelectors,
 } as const;
 
 // Re-export individual selectors for direct import
@@ -25,4 +29,6 @@ export {
   CommonSelectors,
   AgreementsSelectors,
   AgreementTemplatesSelectors,
+  InvoicesSelectors,
+  PaymentsSelectors,
 };

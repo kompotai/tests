@@ -4,9 +4,10 @@
  * Handles payment listing, searching, and viewing.
  */
 
-import { Page, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { WORKSPACE_ID } from '@fixtures/users';
+import { PaymentsSelectors } from './selectors/payments.selectors';
 
 export interface PaymentData {
   id?: string;
@@ -27,7 +28,7 @@ export class PaymentsPage extends BasePage {
 
   async waitForPageLoad(): Promise<void> {
     await super.waitForPageLoad();
-    await this.page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator(PaymentsSelectors.pageHeader).first().waitFor({ state: 'visible', timeout: 10000 });
   }
 
   // ============================================
@@ -35,7 +36,7 @@ export class PaymentsPage extends BasePage {
   // ============================================
 
   async getRowCount(): Promise<number> {
-    const rows = this.page.locator('table tbody tr');
+    const rows = this.page.locator(PaymentsSelectors.tableRow);
     return await rows.count();
   }
 
@@ -45,7 +46,7 @@ export class PaymentsPage extends BasePage {
   }
 
   async openFirstPayment(): Promise<string | null> {
-    const rows = this.page.locator('table tbody tr');
+    const rows = this.page.locator(PaymentsSelectors.tableRow);
     const count = await rows.count();
 
     if (count === 0) {
@@ -70,7 +71,7 @@ export class PaymentsPage extends BasePage {
       return;
     }
 
-    const row = this.page.locator('table tbody tr').filter({ hasText: identifier }).first();
+    const row = this.page.locator(PaymentsSelectors.tableRow).filter({ hasText: identifier }).first();
     await row.click();
     await this.page.waitForURL(/\/payments\/[a-f0-9]+/, { timeout: 10000 });
     await this.waitForPageLoad();
@@ -82,22 +83,22 @@ export class PaymentsPage extends BasePage {
 
   async findPaymentByAmount(amount: number): Promise<boolean> {
     const amountStr = amount.toString();
-    const row = this.page.locator('table tbody tr').filter({ hasText: amountStr });
+    const row = this.page.locator(PaymentsSelectors.tableRow).filter({ hasText: amountStr });
     return await row.first().isVisible({ timeout: 5000 }).catch(() => false);
   }
 
   async findPaymentByContact(contactName: string): Promise<boolean> {
-    const row = this.page.locator('table tbody tr').filter({ hasText: contactName });
+    const row = this.page.locator(PaymentsSelectors.tableRow).filter({ hasText: contactName });
     return await row.first().isVisible({ timeout: 5000 }).catch(() => false);
   }
 
   async getPaymentRowByAmount(amount: number) {
     const amountStr = amount.toString();
-    return this.page.locator('table tbody tr').filter({ hasText: amountStr }).first();
+    return this.page.locator(PaymentsSelectors.tableRow).filter({ hasText: amountStr }).first();
   }
 
   async getPaymentRowByContact(contactName: string) {
-    return this.page.locator('table tbody tr').filter({ hasText: contactName }).first();
+    return this.page.locator(PaymentsSelectors.tableRow).filter({ hasText: contactName }).first();
   }
 
   async clickPaymentByAmount(amount: number): Promise<void> {
@@ -123,13 +124,22 @@ export class PaymentsPage extends BasePage {
   }
 
   async shouldSeeTable(): Promise<boolean> {
-    return await this.page.locator('table').first()
+    return await this.page.locator(PaymentsSelectors.table).first()
       .isVisible({ timeout: 3000 })
       .catch(() => false);
   }
 
   async shouldSeeEmptyState(): Promise<void> {
-    const emptyState = this.page.locator('text=No payments').or(this.page.locator('text=Нет платежей'));
+    const emptyState = this.page
+      .locator(PaymentsSelectors.emptyState)
+      .or(this.page.locator(PaymentsSelectors.emptyStateText))
+      .or(this.page.locator(PaymentsSelectors.emptyStateTextRu));
     await expect(emptyState.first()).toBeVisible({ timeout: 10000 });
+  }
+
+  async getPageHeader(): Promise<string> {
+    const header = this.page.locator(PaymentsSelectors.pageHeader).first();
+    const text = await header.textContent();
+    return text?.trim() || '';
   }
 }

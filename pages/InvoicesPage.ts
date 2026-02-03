@@ -4,9 +4,10 @@
  * Handles invoice listing, viewing, and management.
  */
 
-import { Page, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { WORKSPACE_ID } from '@fixtures/users';
+import { InvoicesSelectors } from './selectors/invoices.selectors';
 
 export interface InvoiceData {
   number?: string;
@@ -26,7 +27,7 @@ export class InvoicesPage extends BasePage {
 
   async waitForPageLoad(): Promise<void> {
     await super.waitForPageLoad();
-    await this.page.locator('h1').first().waitFor({ state: 'visible', timeout: 10000 });
+    await this.page.locator(InvoicesSelectors.pageHeader).first().waitFor({ state: 'visible', timeout: 10000 });
   }
 
   // ============================================
@@ -34,7 +35,7 @@ export class InvoicesPage extends BasePage {
   // ============================================
 
   async getRowCount(): Promise<number> {
-    const rows = this.page.locator('table tbody tr');
+    const rows = this.page.locator(InvoicesSelectors.tableRow);
     return await rows.count();
   }
 
@@ -44,7 +45,7 @@ export class InvoicesPage extends BasePage {
   }
 
   async openFirstInvoice(): Promise<string | null> {
-    const rows = this.page.locator('table tbody tr');
+    const rows = this.page.locator(InvoicesSelectors.tableRow);
     const count = await rows.count();
 
     if (count === 0) {
@@ -52,7 +53,7 @@ export class InvoicesPage extends BasePage {
     }
 
     const firstRow = rows.first();
-    const numberCell = firstRow.locator('td').first();
+    const numberCell = firstRow.locator(InvoicesSelectors.tableCell).first();
     await numberCell.click();
     await this.page.waitForURL(/\/invoices\/[a-f0-9]+/, { timeout: 10000 });
     await this.waitForPageLoad();
@@ -73,7 +74,7 @@ export class InvoicesPage extends BasePage {
     }
 
     // Otherwise find in list by text (INV-xxxx or other identifier)
-    const row = this.page.locator('table tbody tr').filter({ hasText: identifier }).first();
+    const row = this.page.locator(InvoicesSelectors.tableRow).filter({ hasText: identifier }).first();
     await row.click();
     await this.page.waitForURL(/\/invoices\/[a-f0-9]+/, { timeout: 10000 });
     await this.waitForPageLoad();
@@ -84,18 +85,21 @@ export class InvoicesPage extends BasePage {
   // ============================================
 
   async getInvoiceNumber(): Promise<string> {
-    const header = this.page.locator('h1').first();
+    const header = this.page.locator(InvoicesSelectors.pageHeader).first();
     const text = await header.textContent();
     return text?.trim() || '';
   }
 
   async hasPaymentsSection(): Promise<boolean> {
-    const paymentsSection = this.page.locator('text=Payments').or(this.page.locator('text=Оплаты'));
+    const paymentsSection = this.page
+      .locator(InvoicesSelectors.paymentsSection)
+      .or(this.page.locator(InvoicesSelectors.paymentsSectionText))
+      .or(this.page.locator(InvoicesSelectors.paymentsSectionTextRu));
     return await paymentsSection.first().isVisible({ timeout: 5000 }).catch(() => false);
   }
 
   async hasRefundsSection(): Promise<boolean> {
-    const refundsSection = this.page.locator('[data-testid="invoice-related-refunds"]');
+    const refundsSection = this.page.locator(InvoicesSelectors.refundsSection);
     return await refundsSection.isVisible({ timeout: 3000 }).catch(() => false);
   }
 
@@ -108,13 +112,16 @@ export class InvoicesPage extends BasePage {
   }
 
   async shouldSeeTable(): Promise<boolean> {
-    return await this.page.locator('table').first()
+    return await this.page.locator(InvoicesSelectors.table).first()
       .isVisible({ timeout: 3000 })
       .catch(() => false);
   }
 
   async shouldSeeEmptyState(): Promise<void> {
-    const emptyState = this.page.locator('text=No invoices').or(this.page.locator('text=Нет счетов'));
+    const emptyState = this.page
+      .locator(InvoicesSelectors.emptyState)
+      .or(this.page.locator(InvoicesSelectors.emptyStateText))
+      .or(this.page.locator(InvoicesSelectors.emptyStateTextRu));
     await expect(emptyState.first()).toBeVisible({ timeout: 10000 });
   }
 }
