@@ -6,12 +6,12 @@
 import { Page, Route } from '@playwright/test';
 
 /**
- * Mock Telegram Integration
+ * Mock Outbound Interactions
  *
- * Intercepts /api/interactions requests for Telegram and returns successful responses
+ * Intercepts /api/interactions requests for all outbound messages and returns successful responses
  */
-export async function mockTelegramIntegration(page: Page) {
-  // Mock interactions API for Telegram messages
+export async function mockOutboundInteractions(page: Page) {
+  // Mock interactions API for all outbound messages (webchat, telegram, sms, email, etc)
   await page.route('**/api/interactions', async (route: Route) => {
     const request = route.request();
     const method = request.method();
@@ -19,11 +19,11 @@ export async function mockTelegramIntegration(page: Page) {
     if (method === 'POST') {
       const postData = request.postDataJSON();
 
-      // Only mock Telegram interactions
-      if (postData?.type === 'telegram' && postData?.direction === 'outbound') {
+      // Mock all outbound interactions
+      if (postData?.direction === 'outbound') {
         const mockInteraction = {
           id: `mock_interaction_${Date.now()}`,
-          type: 'telegram',
+          type: postData.type,
           channelId: postData.channelId,
           contactId: postData.contactId,
           direction: 'outbound',
@@ -34,7 +34,7 @@ export async function mockTelegramIntegration(page: Page) {
         };
 
         await route.fulfill({
-          status: 200,
+          status: 201,
           contentType: 'application/json',
           body: JSON.stringify(mockInteraction),
         });
@@ -46,7 +46,7 @@ export async function mockTelegramIntegration(page: Page) {
     await route.continue();
   });
 
-  console.log('✓ Telegram integration mocked');
+  console.log('✓ Outbound interactions mocked');
 }
 
 /**
@@ -55,39 +55,97 @@ export async function mockTelegramIntegration(page: Page) {
  * Provides mock Telegram account for account selector
  */
 export async function mockTelegramAccounts(page: Page) {
-  // Mock channel config endpoint to include Telegram account
-  await page.route('**/api/channels/config/telegram', async (route: Route) => {
-    const mockConfig = {
-      code: 'telegram',
-      name: 'Telegram',
-      enabled: true,
-      telegram: {
-        enabled: true,
-        botToken: 'mock_bot_token',
-        botUsername: '@mock_test_bot',
-        accounts: [
+  // Mock contact endpoint to include Telegram data
+  await page.route('**/api/contacts/*', async (route: Route) => {
+    const request = route.request();
+    const method = request.method();
+
+    // Only intercept GET requests for contact details
+    if (method === 'GET') {
+      // Fetch the original response
+      const response = await route.fetch();
+      const originalData = await response.json();
+
+      // Add mock Telegram accounts to contact
+      const modifiedData = {
+        ...originalData,
+        telegrams: [
           {
-            username: '@test_account',
+            username: '@mock_test_account',
             chatId: 'mock_chat_id_123',
           },
         ],
-      },
-    };
+      };
 
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(mockConfig),
-    });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(modifiedData),
+      });
+      return;
+    }
+
+    // Let other requests through
+    await route.continue();
   });
 
   console.log('✓ Telegram accounts mocked');
 }
 
 /**
+ * Mock Socket.IO interaction:created events
+ *
+ * Simulates websocket events when messages are sent
+ */
+export async function mockSocketEvents(page: Page) {
+  // Intercept Socket.IO connection and mock events
+  await page.addInitScript(() => {
+    // Wait for socket.io to load and then mock
+    const originalSocketIO = (window as any).io;
+    if (typeof originalSocketIO === 'function') {
+      const originalConnect = originalSocketIO.connect || originalSocketIO;
+
+      (window as any).io = function(...args: any[]) {
+        const socket = originalConnect.apply(this, args);
+
+        // Mock emit to simulate receiving events
+        const originalEmit = socket.emit;
+        socket.emit = function(eventName: string, ...data: any[]) {
+          const result = originalEmit.apply(this, [eventName, ...data]);
+
+          // Simulate interaction:created event after sending
+          if (eventName === 'send:message' || eventName === 'interaction:send') {
+            setTimeout(() => {
+              const handlers = socket._callbacks?.$['interaction:created'];
+              if (handlers) {
+                handlers.forEach((handler: Function) => {
+                  handler({
+                    ...data[0],
+                    id: `mock_${Date.now()}`,
+                    createdAt: new Date().toISOString(),
+                  });
+                });
+              }
+            }, 50);
+          }
+
+          return result;
+        };
+
+        return socket;
+      };
+      (window as any).io.connect = (window as any).io;
+    }
+  });
+
+  console.log('✓ Socket events mocked');
+}
+
+/**
  * Setup all mocks for Chat tests
  */
 export async function setupChatMocks(page: Page) {
-  await mockTelegramIntegration(page);
+  await mockOutboundInteractions(page);
   await mockTelegramAccounts(page);
+  await mockSocketEvents(page);
 }

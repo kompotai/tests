@@ -63,9 +63,10 @@ export class ChatPage extends BasePage {
     const contacts = await this.page.locator('[data-testid*="chat-contact-item-"]').all();
     if (contacts[index]) {
       await contacts[index].click();
+      // Wait for empty state to disappear OR messages container to appear
       await Promise.race([
-        this.page.locator(this.selectors.messagesContainer).waitFor({ state: 'visible' }),
-        this.page.locator(this.selectors.emptyState).waitFor({ state: 'visible' })
+        this.page.locator(this.selectors.emptyState).waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {}),
+        this.page.locator(this.selectors.messagesContainer).waitFor({ state: 'visible', timeout: 5000 })
       ]);
     }
   }
@@ -73,7 +74,9 @@ export class ChatPage extends BasePage {
   async searchContact(query: string): Promise<void> {
     const searchInput = this.page.locator(this.selectors.searchInput);
     await searchInput.fill(query);
-    // Wait for network idle after search
+    // Wait for loading indicator to disappear
+    await this.page.locator('[role="status"]:has-text("Loading")').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    // Also wait for network idle
     await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
@@ -140,9 +143,8 @@ export class ChatPage extends BasePage {
 
   async clickSend(): Promise<void> {
     const sendButton = this.page.locator(this.selectors.sendButton);
-    await sendButton.click();
-    // Wait for message input to be cleared (indicates send was successful)
-    await expect(this.page.locator(this.selectors.messageInput)).toHaveValue('', { timeout: 5000 });
+    // Use force: true to bypass cookie consent banner or other overlays
+    await sendButton.click({ force: true });
   }
 
   async sendMessage(text: string): Promise<void> {

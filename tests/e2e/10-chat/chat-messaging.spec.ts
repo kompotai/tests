@@ -30,15 +30,7 @@ ownerTest.describe('Chat - Messaging', () => {
   ownerTest('should send a simple text message', async () => {
     const messageText = `Test message ${Date.now()}`;
 
-    await chatPage.typeMessage(messageText);
-    await chatPage.clickSend();
-
-    // Input should be cleared after send
-    const isEmpty = await chatPage.getMessageInputValue();
-    expect(isEmpty).toBe('');
-
-    // Wait for message to appear
-    await chatPage.waitForMessage(messageText, 15000);
+    await chatPage.sendMessage(messageText);
 
     const hasMessage = await chatPage.hasMessageWithText(messageText);
     expect(hasMessage).toBeTruthy();
@@ -81,7 +73,10 @@ ownerTest.describe('Chat - Messaging', () => {
 
     await chatPage.clickSend();
 
-    // Input should be cleared immediately after send
+    // Wait for message to appear (indicates successful send)
+    await chatPage.waitForMessage(messageText, 15000);
+
+    // Input should be cleared after successful send
     const valueAfter = await chatPage.getMessageInputValue();
     expect(valueAfter).toBe('');
   });

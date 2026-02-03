@@ -34,7 +34,7 @@ export const ChatSelectors = {
   messageText: '[data-testid="chat-messages-container"] .text-sm.whitespace-pre-wrap.break-words',
   messageByText: (text: string) => `[data-testid="chat-messages-container"] .whitespace-pre-wrap:has-text("${text}")`,
 
-  // Contact panel - scope to avoid conflicts
-  contactPanelName: '[data-testid="chat-messages-container"] ~ div h3.text-base.font-medium',
+  // Contact panel
+  contactPanelName: '[data-testid="chat-contact-panel-name"]',
 
 } as const;
