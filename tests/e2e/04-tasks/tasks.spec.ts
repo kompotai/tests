@@ -194,20 +194,23 @@ test.describe('T2: Create Task', () => {
     await tasksPage.goto();
     await tasksPage.openCreateForm();
 
-    // Пытаемся создать задачу без имени
-    const submitBtn = page.locator('[data-testid="task-form-submit"], button:has-text("Create Task"), button:has-text("Save")').first();
-
-    // Очищаем поле имени (если там есть значение по умолчанию)
-    const nameField = page.locator('[data-testid="task-form-input-name"], input[name="name"]').first();
-    await nameField.clear();
-
-    await submitBtn.click();
+    // Wait for form to appear
     await page.waitForTimeout(500);
 
-    // Проверяем что появилась ошибка валидации или форма не закрылась
+    // Clear the name field (use correct selector - input#title)
+    const nameField = page.locator('input#title').first();
+    await nameField.waitFor({ state: 'visible', timeout: 5000 });
+    await nameField.clear();
+
+    // Try to submit with empty name
+    const submitBtn = page.locator('[data-testid="task-form-button-submit"]').first();
+    await submitBtn.click({ force: true });
+    await page.waitForTimeout(500);
+
+    // Check that validation error appears or form stays open
     const formStillVisible = await tasksPage.shouldSeeForm();
     const hasError = await page
-      .locator('[data-testid*="error"], .text-red, [class*="error"], :invalid')
+      .locator('[data-testid*="error"], .text-red, [class*="error"], :invalid, [aria-invalid="true"]')
       .first()
       .isVisible({ timeout: 2000 })
       .catch(() => false);
@@ -234,8 +237,7 @@ test.describe('T3: Edit Task', () => {
   let context: BrowserContext;
   let page: Page;
   let tasksPage: TasksPage;
-  // Use existing task from the task list
-  let taskToEdit = 'Sample Task';
+  let taskToEdit: string;
   let updatedTaskName: string;
 
   test.beforeAll(async () => {
@@ -244,6 +246,11 @@ test.describe('T3: Edit Task', () => {
     page = await context.newPage();
     await loginOwner(page);
     tasksPage = new TasksPage(page);
+
+    // Create a task specifically for edit tests
+    taskToEdit = generateTaskName('EditTest');
+    await tasksPage.goto();
+    await tasksPage.createMinimal(taskToEdit);
   });
 
   test.afterAll(async () => {
@@ -254,7 +261,9 @@ test.describe('T3: Edit Task', () => {
 
   test('T3-AC1: Open task edit form', async () => {
     await tasksPage.goto();
-    // Click edit on existing task
+    await tasksPage.shouldSeeTask(taskToEdit);
+
+    // Click edit on the task we created
     await tasksPage.clickRowEdit(taskToEdit);
 
     const formVisible = await tasksPage.shouldSeeForm();
@@ -325,8 +334,7 @@ test.describe('T4: Delete Task', () => {
   let context: BrowserContext;
   let page: Page;
   let tasksPage: TasksPage;
-  // Use existing task (will be skipped if not found)
-  let taskToDelete = 'report 3';
+  let taskToDelete: string;
 
   test.beforeAll(async () => {
     browser = await chromium.launch({ headless: true });
@@ -334,6 +342,11 @@ test.describe('T4: Delete Task', () => {
     page = await context.newPage();
     await loginOwner(page);
     tasksPage = new TasksPage(page);
+
+    // Create a task specifically for deletion tests
+    taskToDelete = generateTaskName('DeleteTest');
+    await tasksPage.goto();
+    await tasksPage.createMinimal(taskToDelete);
   });
 
   test.afterAll(async () => {
@@ -344,10 +357,11 @@ test.describe('T4: Delete Task', () => {
 
   test('T4-AC1: Initiate task deletion', async () => {
     await tasksPage.goto();
+    await tasksPage.shouldSeeTask(taskToDelete);
 
-    // Find delete button on existing task
+    // Find delete button on the task we created
     const row = page.locator(`tr:has-text("${taskToDelete}")`).first();
-    const deleteBtn = row.locator('button[title="Delete"], button:has([class*="trash"])').first();
+    const deleteBtn = row.locator('button:has-text("Delete"), button[title*="Delete"]').first();
 
     const deleteBtnVisible = await deleteBtn.isVisible({ timeout: 5000 }).catch(() => false);
     expect(deleteBtnVisible).toBe(true);

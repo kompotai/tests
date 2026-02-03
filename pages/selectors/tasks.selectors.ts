@@ -14,7 +14,7 @@ export const TasksSelectors = {
     status: '[data-testid="task-form-select-status"]',
     dueDate: 'button:has-text("Select date"), [data-testid="task-form-input-dueDate"]',
     assignee: '[data-testid="task-form-select-assignee"]',
-    submit: 'button:has-text("Save"), [data-testid="task-form-button-submit"], button:has-text("Create Task")',
+    submit: '[data-testid="task-form-button-submit"], button:has-text("Create Task"), button:has-text("Save")',
     cancel: '[data-testid="task-form-cancel"]',
   },
 

@@ -68,9 +68,6 @@ export class TasksPage extends BasePage {
     await formContainer.waitFor({ state: 'visible', timeout: 5000 });
     await this.wait(500); // Extra wait for form to fully render
 
-    // Capture screenshot for debugging
-    await this.page.screenshot({ path: 'test-results/debug-form-open.png' });
-
     // Find name input using the selector from selectors file
     const nameField = this.page.locator(this.s.form.name).first();
     await nameField.waitFor({ state: 'visible', timeout: 5000 });
@@ -82,9 +79,6 @@ export class TasksPage extends BasePage {
     await this.wait(100);
     await nameField.pressSequentially(data.name, { delay: 30 });
     await this.wait(500);
-
-    // Capture screenshot after filling
-    await this.page.screenshot({ path: 'test-results/debug-form-filled.png' });
 
     if (data.description) {
       const descField = this.page.locator(this.s.form.description).first();
@@ -155,21 +149,14 @@ export class TasksPage extends BasePage {
       await this.wait(300);
     }
 
-    // Debug: screenshot before submit
-    await this.page.screenshot({ path: 'test-results/debug-before-submit.png', fullPage: true });
-
-    // Find and click submit button INSIDE the form panel (not the header button)
-    // Use data-testid for precise targeting
+    // Find and click submit button using data-testid
     const submitBtn = this.page.locator('[data-testid="task-form-button-submit"]').first();
     await submitBtn.scrollIntoViewIfNeeded();
     await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
     await submitBtn.click({ force: true }); // Force click to bypass any remaining overlays
 
-    // Debug: screenshot after submit
-    await this.wait(1000);
-    await this.page.screenshot({ path: 'test-results/debug-after-submit.png' });
-
     // Wait for form to close (indicates successful submission)
+    await this.wait(1000);
     const formContainer = this.page.locator(this.s.form.container).first();
     await formContainer.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
 
