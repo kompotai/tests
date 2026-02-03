@@ -46,7 +46,14 @@ As a user, I want to delete tasks so that I can remove completed or cancelled ta
 - [ ] **AC4**: Task list updates after deletion
 
 ### T5: Change Task Status
-As a user, I want to change task status so that I can track progress of work.
+As a user, I want to quickly change task status **without opening edit form**
+so that I can update progress efficiently.
+
+#### Implementation Note
+Status can be changed via:
+- Drag-and-drop in board view
+- Quick dropdown in list view
+- Full edit form (covered in T3)
 
 #### Acceptance Criteria
 - [ ] **AC1**: User can change status to "To Do"
@@ -54,6 +61,8 @@ As a user, I want to change task status so that I can track progress of work.
 - [ ] **AC3**: User can change status to "Done"
 - [ ] **AC4**: Status change is saved immediately
 - [ ] **AC5**: Task list reflects status change
+- [ ] **AC6**: User can change status via drag-and-drop in board view
+- [ ] **AC7**: User can change status via quick dropdown in list view
 
 ### T6: Filter Tasks
 As a user, I want to filter tasks so that I can find specific tasks quickly.
