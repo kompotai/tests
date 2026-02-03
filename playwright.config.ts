@@ -193,6 +193,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 10: Pipelines - pipeline settings and stages management
+    {
+      name: 'pipelines',
+      testDir: './tests/e2e/10-pipelines',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - pipelines before stages
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',
