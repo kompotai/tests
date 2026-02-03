@@ -20,12 +20,19 @@ export async function dismissCookieConsent(page: Page) {
 
 export async function createUserViaUI(page: Page, user: User) {
   // Navigate to Settings > Users
-  await page.goto('/ws/settings/users');
+  await page.goto(`/ws/${WORKSPACE_ID}/settings/users`);
   await page.waitForLoadState('networkidle');
   await dismissCookieConsent(page);
 
+  // Check if user already exists in the table
+  const userRow = page.locator(`tr:has-text("${user.email}")`);
+  if (await userRow.isVisible({ timeout: 2000 }).catch(() => false)) {
+    console.log(`✅ User ${user.email} already exists, skipping creation`);
+    return;
+  }
+
   // Click "Add User"
-  await page.click('[data-testid="add-user-button"], button:has-text("Add User"), button:has-text("Add")');
+  await page.click('[data-testid="users-button-create"], button:has-text("Add User"), button:has-text("Add")');
   await page.waitForSelector('[data-testid="user-form"]', { timeout: 5000 });
 
   // Fill form
@@ -58,8 +65,21 @@ export async function createUserViaUI(page: Page, user: User) {
   // Submit and wait for success
   await page.click('[data-testid="user-form-button-submit"]');
 
-  // Wait for form to close (drawer closes on success)
-  await page.waitForSelector('[data-testid="user-form"]', { state: 'hidden', timeout: 10000 });
+  // Wait for form to close (drawer closes on success) or error message
+  try {
+    await page.waitForSelector('[data-testid="user-form"]', { state: 'hidden', timeout: 10000 });
+  } catch {
+    // Check if there's an error about user already existing
+    const errorText = await page.locator('[role="alert"], .text-red-500, .text-destructive').textContent().catch(() => '');
+    if (errorText?.includes('already exists')) {
+      console.log(`⚠️ User ${user.email} already exists (detected via error), closing form`);
+      // Close the form
+      await page.click('[data-testid="user-form-button-cancel"], button:has-text("Cancel")').catch(() => {});
+      await page.waitForSelector('[data-testid="user-form"]', { state: 'hidden', timeout: 5000 }).catch(() => {});
+      return;
+    }
+    throw new Error(`Failed to create user ${user.email}: ${errorText}`);
+  }
 }
 
 export async function loginAndSaveState(context: BrowserContext, user: User) {

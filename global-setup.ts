@@ -9,9 +9,52 @@
  */
 
 import * as dotenv from 'dotenv';
+import { MongoClient, ObjectId } from 'mongodb';
 
-// Загружаем .env с перезаписью shell переменных
-dotenv.config({ override: true });
+// Загружаем .env как fallback (не перезаписывает Doppler/shell переменные)
+dotenv.config({ override: false });
+
+// Required test contacts for agreements E2E tests
+const TEST_CONTACTS = [
+  { name: 'Carol Lopez', email: 'carol.lopez@megatest.kompot.ai' },
+  { name: 'Thomas Walker', email: 'thomas.walker@megatest.kompot.ai' },
+  { name: 'Nancy Moore', email: 'nancy.moore@megatest.kompot.ai' },
+];
+
+/**
+ * Ensure required test contacts exist in the workspace database
+ */
+async function ensureTestContacts(mongoUri: string, wsId: string): Promise<void> {
+  const client = new MongoClient(mongoUri);
+
+  try {
+    await client.connect();
+    const db = client.db(`ws_${wsId}`);
+    const contacts = db.collection('contacts');
+
+    for (const contact of TEST_CONTACTS) {
+      const existing = await contacts.findOne({ name: contact.name });
+
+      if (!existing) {
+        await contacts.insertOne({
+          _id: new ObjectId(),
+          name: contact.name,
+          emails: [{ address: contact.email, isVerified: true, isSubscribed: true }],
+          phones: [],
+          addresses: [],
+          ownerId: new ObjectId(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        console.log(`    ✅ Created test contact: ${contact.name}`);
+      } else {
+        console.log(`    ✓  Test contact exists: ${contact.name}`);
+      }
+    }
+  } finally {
+    await client.close();
+  }
+}
 
 export default async function globalSetup() {
   console.log('\n🚀 Global Setup\n');
@@ -20,6 +63,7 @@ export default async function globalSetup() {
   const baseUrl = process.env.BASE_URL;
   const hasMongoDB = Boolean(process.env.MONGODB_URI);
   const hasSuperAdmin = Boolean(process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD);
+  const isTesterMode = !hasMongoDB;
 
   // Валидация обязательных переменных
   if (!baseUrl) {
@@ -29,16 +73,33 @@ export default async function globalSetup() {
     process.exit(1);
   }
 
-  if (!process.env.WS_ID && !hasMongoDB) {
+  if (!process.env.WS_ID) {
     console.error('❌ WS_ID не задан!\n');
-    console.error('Для тестировщиков добавьте в .env:');
+    console.error('Добавьте в .env:');
     console.error('  WS_ID=ваш-workspace-id\n');
     process.exit(1);
   }
 
-  // Генерируем credentials для отображения
-  const ownerEmail = `${wsId}-owner@kompot.ai`;
-  const ownerPassword = `${wsId}Owner123!`;
+  // Tester Mode: проверяем WS_OWNER_EMAIL и WS_OWNER_PASSWORD
+  if (isTesterMode) {
+    if (!process.env.WS_OWNER_EMAIL || !process.env.WS_OWNER_PASSWORD) {
+      console.error('❌ WS_OWNER_EMAIL и WS_OWNER_PASSWORD не заданы!\n');
+      console.error('Для тестировщиков:');
+      console.error('  1. Зарегистрируйте workspace на Stage');
+      console.error('  2. Добавьте в .env:');
+      console.error('     WS_OWNER_EMAIL=ваш-email@example.com');
+      console.error('     WS_OWNER_PASSWORD=ваш-пароль\n');
+      process.exit(1);
+    }
+  }
+
+  // Credentials для отображения
+  const ownerEmail = isTesterMode
+    ? process.env.WS_OWNER_EMAIL!
+    : `${wsId}-owner@kompot.ai`;
+  const ownerPassword = isTesterMode
+    ? process.env.WS_OWNER_PASSWORD!
+    : `${wsId}Owner123!`;
 
   // Вывод конфигурации
   console.log('═'.repeat(60));
@@ -52,6 +113,12 @@ export default async function globalSetup() {
     console.log(`  MongoDB:      ✅ Доступен`);
     console.log(`  Super Admin:  ${hasSuperAdmin ? '✅ Доступен' : '⚠️  Не задан (тесты SA будут пропущены)'}`);
     console.log('─'.repeat(60));
+
+    // NOTE: Test contacts are created in company-owner.spec.ts AFTER workspace cleanup
+    // because cleanup deletes the database including contacts
+    console.log('  📋 Тестовые контакты: создаются после cleanup (в company-owner.spec.ts)');
+
+    console.log('─'.repeat(60));
     console.log('  Тесты:');
     console.log('    ✅ Super Admin (SA1, SA2)' + (hasSuperAdmin ? '' : ' — SKIP'));
     console.log('    ✅ Cleanup + Registration');
@@ -64,9 +131,9 @@ export default async function globalSetup() {
     console.log(`  BASE_URL:     ${baseUrl}`);
     console.log(`  WS_ID:        ${wsId}`);
     console.log('─'.repeat(60));
-    console.log('  Credentials (сгенерированы из WS_ID):');
+    console.log('  Credentials (из env vars):');
     console.log(`    Email:      ${ownerEmail}`);
-    console.log(`    Password:   ${ownerPassword}`);
+    console.log(`    Password:   ${'*'.repeat(8)}`);
     console.log('─'.repeat(60));
     console.log('  Тесты:');
     console.log('    ⏭️  Super Admin — SKIP (нет SUPER_ADMIN_*)');
@@ -74,8 +141,6 @@ export default async function globalSetup() {
     console.log('    ⏭️  DB Verification — SKIP (нет MONGODB_URI)');
     console.log('    ✅ Login в существующий workspace');
     console.log('    ✅ UI Tests (CO1-CO4)');
-    console.log('─'.repeat(60));
-    console.log('  ⚠️  Убедитесь, что workspace уже создан с этими credentials!');
   }
 
   console.log('═'.repeat(60) + '\n');

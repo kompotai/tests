@@ -9,6 +9,8 @@
     "test:headed": "npx playwright test --headed",
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
+    "test:setup": "FORCE_SETUP=true npx playwright test --project=company-owner",
+    "test:setup:stage": "doppler run --project kompot --config stage -- env FORCE_SETUP=true npx playwright test --project=company-owner",
     "report": "npx playwright show-report",
     "codegen": "npx playwright codegen"
   },
@@ -23,8 +25,11 @@
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.5",
+    "@types/pdfkit": "^0.17.4",
     "dotenv": "^16.4.7",
     "mongodb": "^7.0.0",
+    "pdf-lib": "^1.17.1",
+    "pdfkit": "^0.17.2",
     "typescript": "^5.7.3"
   }
 }
