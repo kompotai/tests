@@ -171,7 +171,18 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
-    // 08: Jobs - job related entities
+    // 08: Payments - payment CRUD and workflows
+    {
+      name: 'payments',
+      testDir: './tests/e2e/08-payments',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - payment operations depend on each other
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 08b: Jobs - job related entities
     {
       name: 'jobs',
       testDir: './tests/e2e/08-jobs',
