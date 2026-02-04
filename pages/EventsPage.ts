@@ -326,4 +326,11 @@ export class EventsPage extends BasePage {
     const editButton = row.locator('[data-testid*="edit"]').first();
     await editButton.click();
   }
+
+  async deleteEvent(eventName: string): Promise<void> {
+    const row = this.getEventRowByName(eventName);
+    const deleteButton = row.locator('[data-testid*="delete"]').first();
+    await deleteButton.click();
+    await this.page.waitForLoadState('networkidle');
+  }
 }

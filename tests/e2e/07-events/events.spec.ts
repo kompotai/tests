@@ -353,4 +353,57 @@ ownerTest.describe('E4: Filtering and Searching Events', () => {
     const clearedCount = await eventsPage.getEventsCount();
     expect(clearedCount).toBeGreaterThanOrEqual(originalCount);
   });
+
+ownerTest.describe('E5: Delete Event', () => {
+  let eventsPage: EventsPage;
+
+  ownerTest.beforeEach(async ({ page }) => {
+    eventsPage = new EventsPage(page);
+    await eventsPage.goto();
+    await eventsPage.waitForPageLoad();
+  });
+
+  ownerTest('AC1: should have delete button for events', async () => {
+    const count = await eventsPage.getEventsCount();
+    ownerTest.skip(count === 0, 'No events to delete - create test data first');
+
+    const firstRow = eventsPage.tableRows.first();
+    const deleteButton = firstRow.locator('[data-testid*="delete"]');
+
+    await expect(deleteButton).toBeVisible();
+  });
+
+  ownerTest('AC2: should delete an event and remove it from table', async ({ page }) => {
+    // Create a unique event to delete
+    await eventsPage.clickCreateEvent();
+
+    const eventName = `Delete Event ${Date.now()}`;
+    const eventData = {
+      name: eventName,
+      type: 'Webinar',
+      format: 'Online' as 'Online',
+      startDate: '2026-05-01',
+    };
+
+    await eventsPage.fillName(eventData.name);
+    await eventsPage.selectType(eventData.type);
+    await eventsPage.selectFormat(eventData.format);
+    await eventsPage.fillStartDate(eventData.startDate);
+    await eventsPage.submitForm();
+
+    await page.waitForLoadState('networkidle');
+
+    // Ensure event exists
+    await expect(eventsPage.getEventRowByName(eventName)).toBeVisible();
+
+    // Delete the event using the new helper
+    await eventsPage.deleteEvent(eventName);
+
+    // Verify the event no longer exists
+    const exists = await eventsPage.verifyEventExists({ name: eventName }).catch(() => false);
+    expect(exists).toBeFalsy();
+
+    const row = eventsPage.getEventRowByName(eventName);
+    await expect(row).not.toBeVisible();
+  });
 });
