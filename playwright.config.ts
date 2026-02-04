@@ -66,6 +66,7 @@ export default defineConfig({
   },
 
   // Configure projects - sequential flow
+  // Configure projects - sequential flow
   projects: [
     // 01: Super admin login (platform bootstrap)
     {
@@ -106,6 +107,16 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // Security: Role-based access control tests
+    {
+      name: 'security',
+      testDir: './tests/e2e/02-security',
+      dependencies: skipDeps ? [] : ['workspace-users-create'],
+      fullyParallel: false,  // Sequential - login first, then access tests
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
     // 04: Contacts - CRUD operations on contacts
     {
       name: 'contacts',
@@ -128,12 +139,34 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
-    // 06: Opportunities - CRUD operations on opportunities
+    // 06a: Email Campaigns - Email providers, templates, campaigns
+    {
+      name: 'email-campaigns',
+      testDir: './tests/e2e/06-email-campaigns',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - provider setup first
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 06b: Opportunities - CRUD operations on opportunities
     {
       name: 'opportunities',
       testDir: './tests/e2e/06-opportunities',
       dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 07: Events - event management
+    {
+      name: 'events',
+      testDir: './tests/e2e/07-events',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/owner.json',
@@ -172,12 +205,12 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
-    // 10: Events - event management
+    // 10: Pipelines - pipeline settings and stages management
     {
-      name: 'events',
-      testDir: './tests/e2e/10-events',
+      name: 'pipelines',
+      testDir: './tests/e2e/10-pipelines',
       dependencies: skipDeps ? [] : ['company-owner'],
-      fullyParallel: false,
+      fullyParallel: false, // Sequential - pipelines before stages
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/owner.json',

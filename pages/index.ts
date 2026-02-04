@@ -13,3 +13,4 @@ export { PublicSigningPage, type SignerIdentity } from './PublicSigningPage';
 export { MeetingsPage } from './MeetingsPage';
 export { EmailCampaignsPage } from './EmailCampaignsPage';
 export { EventsPage } from './EventsPage';
+export { PipelinesPage } from './PipelinesPage';
