@@ -13,6 +13,7 @@ export const OpportunitiesSelectors = {
     name: '[data-testid="opportunity-form-input-name"]',
     amount: '[data-testid="opportunity-form-input-amount"]',
     contactSelect: '[data-testid="opportunity-form-select-contact"]',
+    description: '[data-testid="opportunity-form-input-description"]',
     submit: '[data-testid="opportunity-form-button-submit"]',
     cancel: '[data-testid="opportunity-form-button-cancel"]',
   },

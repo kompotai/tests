@@ -56,7 +56,7 @@ export class OpportunitiesPage extends BasePage {
 
     // Fill description if provided
     if (data.description) {
-      await this.page.locator('[data-testid="opportunity-form-input-description"]').fill(data.description);
+      await this.page.locator(this.s.form.description).fill(data.description);
     }
 
     await this.submitForm();
@@ -133,6 +133,12 @@ export class OpportunitiesPage extends BasePage {
     await this.wait(300);
   }
 
+  async fillName(name: string): Promise<void> {
+    const nameInput = this.page.locator(this.s.form.name);
+    await nameInput.clear();
+    await nameInput.fill(name);
+  }
+
   async clickRowEdit(): Promise<boolean> {
     const btn = this.page.locator(this.s.rowEditButton).first();
     if (!await btn.isVisible({ timeout: 3000 }).catch(() => false)) return false;
@@ -194,7 +200,7 @@ export class OpportunitiesPage extends BasePage {
     }
 
     if (newData.description !== undefined) {
-      const descInput = this.page.locator('[data-testid="opportunity-form-input-description"]');
+      const descInput = this.page.locator(this.s.form.description);
       await descInput.clear();
       await descInput.fill(newData.description);
     }
@@ -210,7 +216,7 @@ export class OpportunitiesPage extends BasePage {
     // Wait for the row to disappear (delete may happen without confirmation)
     await this.page.locator(this.s.row(name)).first()
       .waitFor({ state: 'hidden', timeout: 10000 })
-      .catch(() => {});
+      .catch((e) => console.warn(`Row "${name}" did not disappear after delete: ${e.message}`));
   }
 
   // ============================================
@@ -245,6 +251,14 @@ export class OpportunitiesPage extends BasePage {
 
   async shouldSeeForm(): Promise<boolean> {
     return this.page.locator(this.s.form.container).first().isVisible({ timeout: 3000 }).catch(() => false);
+  }
+
+  async getOpportunityAmount(name: string): Promise<string> {
+    const row = this.page.locator(this.s.row(name)).first();
+    await expect(row).toBeVisible({ timeout: 5000 });
+    // Amount is typically in the second td (index 1) after the name column
+    const amountCell = row.locator('td').nth(1);
+    return (await amountCell.textContent() ?? '').trim();
   }
 
   async getOpportunityCount(): Promise<number> {

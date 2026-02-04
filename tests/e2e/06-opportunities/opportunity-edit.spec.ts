@@ -49,6 +49,8 @@ ownerTest.describe('Opportunity Edit', () => {
       await opportunitiesPage.edit(name, { amount: 5000 });
 
       await opportunitiesPage.shouldSeeOpportunity(name);
+      const amount = await opportunitiesPage.getOpportunityAmount(name);
+      expect(amount).toContain('5000');
     });
 
     ownerTest('edited opportunity persists after page refresh', async ({ page }) => {
@@ -74,9 +76,7 @@ ownerTest.describe('Opportunity Edit', () => {
 
       // Change name but cancel
       const newName = uniqueOpportunityName('Cancelled');
-      const nameInput = page.locator('[data-testid="opportunity-form-input-name"]');
-      await nameInput.clear();
-      await nameInput.fill(newName);
+      await opportunitiesPage.fillName(newName);
 
       await opportunitiesPage.cancelForm();
 

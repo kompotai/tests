@@ -32,7 +32,7 @@ ownerTest.describe('Opportunity Form Validation', () => {
 
     // Fill name but don't select contact
     const name = uniqueOpportunityName('No Contact');
-    await page.locator('[data-testid="opportunity-form-input-name"]').fill(name);
+    await opportunitiesPage.fillName(name);
 
     await opportunitiesPage.submitForm();
 
@@ -48,7 +48,7 @@ ownerTest.describe('Opportunity Form Validation', () => {
     await opportunitiesPage.dismissToasts();
 
     // Try to submit empty form — click submit directly to avoid 10s form-close wait
-    await page.locator('[data-testid="opportunity-form-button-submit"]').click({ force: true });
+    await page.locator('[data-testid="opportunity-form-button-submit"]').click();
     await opportunitiesPage.wait(500);
 
     // Form should still be visible
@@ -57,7 +57,7 @@ ownerTest.describe('Opportunity Form Validation', () => {
 
     // Now fill in required fields and submit
     const name = uniqueOpportunityName('FixedVal');
-    await page.locator('[data-testid="opportunity-form-input-name"]').fill(name);
+    await opportunitiesPage.fillName(name);
     await opportunitiesPage.selectFirstContact();
     await opportunitiesPage.submitForm();
 
