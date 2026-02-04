@@ -50,7 +50,7 @@ ownerTest.describe('Opportunity Edit', () => {
 
       await opportunitiesPage.shouldSeeOpportunity(name);
       const amount = await opportunitiesPage.getOpportunityAmount(name);
-      expect(amount).toContain('5000');
+      expect(amount).toContain('5,000');
     });
 
     ownerTest('edited opportunity persists after page refresh', async ({ page }) => {
