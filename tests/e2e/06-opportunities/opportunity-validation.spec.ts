@@ -44,11 +44,8 @@ ownerTest.describe('Opportunity Form Validation', () => {
   ownerTest('can successfully create after fixing validation errors', async ({ page }) => {
     await opportunitiesPage.openCreateForm();
 
-    // Dismiss any overlays before clicking submit
-    await opportunitiesPage.dismissToasts();
-
-    // Try to submit empty form — click submit directly to avoid 10s form-close wait
-    await page.locator('[data-testid="opportunity-form-button-submit"]').click();
+    // Try to submit empty form — clickSubmit() avoids 10s form-close wait in submitForm()
+    await opportunitiesPage.clickSubmit();
     await opportunitiesPage.wait(500);
 
     // Form should still be visible

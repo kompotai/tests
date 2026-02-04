@@ -107,11 +107,13 @@ export class OpportunitiesPage extends BasePage {
     return true;
   }
 
-  async submitForm(): Promise<void> {
-    // Dismiss any notification toasts that might be blocking
+  async clickSubmit(): Promise<void> {
     await this.dismissToasts();
-
     await this.page.locator(this.s.form.submit).first().click();
+  }
+
+  async submitForm(): Promise<void> {
+    await this.clickSubmit();
     // Wait for form to close
     await this.page.locator(this.s.form.container).waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
     await this.wait(500);
