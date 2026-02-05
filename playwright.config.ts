@@ -5,6 +5,13 @@ import * as fs from 'fs';
 // Load .env as fallback (don't override Doppler/shell vars)
 dotenv.config({ override: false });
 
+// Stage environment uses HTTP Basic Auth
+const isStage = process.env.BASE_URL?.includes('stage.kompot.ai');
+const stageHttpCredentials = isStage ? {
+  username: process.env.STAGE_HTTP_USER || 'kompot',
+  password: process.env.STAGE_HTTP_PASSWORD || 'stage2025!',
+} : undefined;
+
 // Check if running in shard mode (auth state already exists)
 // When SHARD_MODE=true, skip dependencies since auth is pre-loaded
 const isShardMode = process.env.SHARD_MODE === 'true';
@@ -45,6 +52,9 @@ export default defineConfig({
   use: {
     // Base URL for all tests (required)
     baseURL: process.env.BASE_URL,
+
+    // HTTP Basic Auth for stage environment
+    ...(stageHttpCredentials && { httpCredentials: stageHttpCredentials }),
 
     // Viewport size to support Tailwind 2xl breakpoint (≥1536px)
     viewport: { width: 1920, height: 1080 },
