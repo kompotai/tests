@@ -46,6 +46,12 @@ export default defineConfig({
     // Base URL for all tests (required)
     baseURL: process.env.BASE_URL,
 
+    // HTTP Basic Auth (staging proxy)
+    httpCredentials: {
+      username: process.env.HTTP_USER || 'kompot',
+      password: process.env.HTTP_PASS || 'stage2025!',
+    },
+
     // Viewport size to support Tailwind 2xl breakpoint (≥1536px)
     viewport: { width: 1920, height: 1080 },
 
@@ -199,6 +205,17 @@ export default defineConfig({
       testDir: './tests/e2e/10-pipelines',
       dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: false, // Sequential - pipelines before stages
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 11: Products - product CRUD and categories
+    {
+      name: 'products',
+      testDir: './tests/e2e/11-products',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: true,
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/owner.json',
