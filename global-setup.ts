@@ -69,7 +69,7 @@ export default async function globalSetup() {
   if (!baseUrl) {
     console.error('❌ BASE_URL не задан!\n');
     console.error('Добавьте в .env:');
-    console.error('  BASE_URL=https://kompot-stage.up.railway.app\n');
+    console.error('  BASE_URL=https://stage.kompot.ai\n');
     process.exit(1);
   }
 
