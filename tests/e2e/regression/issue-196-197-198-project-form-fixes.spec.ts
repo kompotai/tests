@@ -145,50 +145,72 @@ ownerTest.describe('Issues #196, #197, #198: Project Form Fixes', () => {
   });
 
   ownerTest('Issue #196: Edit project shows contact name, not ID @regression', async ({ page }) => {
-    // Navigate to projects
+    const projectName = `Edit-contact-test ${Date.now()}`;
+
+    // Step 1: Create a project with a contact
+    await openCreateProjectModal(page);
+
+    // Fill project name
+    await page.locator('[data-testid="project-form-input-name"]').fill(projectName);
+
+    // Select a contact via EntitySelect (async search)
+    const contactSelect = page.locator('[data-testid="project-form-select-contact"]');
+    const contactInput = contactSelect.locator('input');
+    await contactInput.click();
+    await contactInput.fill('a');
+    await page.waitForTimeout(1000);
+
+    // Wait for options to load
+    const contactOption = page.locator('.entity-select__option').first();
+    const hasContactOption = await contactOption.isVisible({ timeout: 5000 }).catch(() => false);
+
+    if (!hasContactOption) {
+      ownerTest.skip(true, 'No contacts available to assign');
+      return;
+    }
+
+    // Remember the contact name we selected
+    const selectedContactName = await contactOption.textContent() || '';
+    await contactOption.click();
+    await page.waitForTimeout(500);
+
+    // Submit the form
+    await page.locator('[data-testid="project-form-button-submit"]').click();
+    await page.waitForLoadState('networkidle');
+    await page.waitForTimeout(2000);
+
+    // Step 2: Find the created project and open it for editing
     await page.goto(`/ws/${WORKSPACE_ID}/projects`);
     await page.waitForLoadState('networkidle');
     await dismissCookieConsent(page);
     await page.waitForTimeout(1000);
 
-    // Find a project row
-    const rows = page.locator('table tbody tr');
-    const count = await rows.count();
+    // Find the project row we just created
+    const projectRow = page.locator('table tbody tr', { hasText: projectName });
+    await expect(projectRow).toBeVisible({ timeout: 5000 });
 
-    if (count === 0) {
-      ownerTest.skip(true, 'No projects to test edit');
-      return;
-    }
-
-    // Click first project to view it
-    await rows.first().locator('td').first().click();
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
-
-    // Click Edit
-    const editButton = page.getByRole('button', { name: /edit/i });
-    const hasEdit = await editButton.isVisible({ timeout: 3000 }).catch(() => false);
-
-    if (!hasEdit) {
-      ownerTest.skip(true, 'No edit button found');
-      return;
-    }
-
+    // Click the inline Edit button within that specific row
+    const editButton = projectRow.locator('button[title="Edit"]');
+    await expect(editButton).toBeVisible({ timeout: 3000 });
     await editButton.click();
 
     // Wait for edit form
     await expect(page.locator('[data-testid="project-form"]')).toBeVisible({ timeout: 5000 });
 
-    // Check the contact EntitySelect
-    const contactSelect = page.locator('[data-testid="project-form-select-contact"]');
-    const singleValue = contactSelect.locator('.entity-select__single-value');
-    const hasValue = await singleValue.isVisible({ timeout: 2000 }).catch(() => false);
+    // Step 3: Verify the contact shows a name, not an ObjectId
+    const editContactSelect = page.locator('[data-testid="project-form-select-contact"]');
+    const singleValue = editContactSelect.locator('.entity-select__single-value');
+    await expect(singleValue).toBeVisible({ timeout: 3000 });
 
-    if (hasValue) {
-      const contactText = await singleValue.textContent() || '';
-      // Should NOT be a raw ObjectId
-      expect(contactText).not.toMatch(/^[a-f0-9]{24}$/);
-    }
+    const contactText = await singleValue.textContent() || '';
+
+    // Should NOT be a raw ObjectId (24 hex chars)
+    expect(contactText).not.toMatch(/^[a-f0-9]{24}$/);
+    // Should NOT be a serialized MongoDB object
+    expect(contactText).not.toContain('ObjectId');
+    expect(contactText).not.toContain('_id');
+    // Should contain at least one letter (real name)
+    expect(contactText).toMatch(/[a-zA-Zа-яА-Я]/);
 
     // Close modal
     await page.locator('[data-testid="project-form-button-cancel"]').click();
