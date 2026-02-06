@@ -10,6 +10,7 @@
 
 import * as dotenv from 'dotenv';
 import { MongoClient, ObjectId } from 'mongodb';
+import bcrypt from 'bcryptjs';
 
 // Загружаем .env как fallback (не перезаписывает Doppler/shell переменные)
 dotenv.config({ override: false });
@@ -56,6 +57,63 @@ async function ensureTestContacts(mongoUri: string, wsId: string): Promise<void>
   }
 }
 
+/**
+ * Ensure super admin exists with correct role and password.
+ * Needed because FORCE_SETUP in company-owner tests may delete/recreate
+ * the user when OWNER.email === SUPER_ADMIN.email.
+ */
+async function ensureSuperAdmin(mongoUri: string): Promise<void> {
+  const email = process.env.SUPER_ADMIN_EMAIL;
+  const password = process.env.SUPER_ADMIN_PASSWORD;
+
+  if (!email || !password) return;
+
+  const client = new MongoClient(mongoUri);
+
+  try {
+    await client.connect();
+    const db = client.db('manager');
+    const users = db.collection('users');
+    const user = await users.findOne({ email });
+
+    if (!user) {
+      // Super admin doesn't exist yet — create
+      const passwordHash = await bcrypt.hash(password, 10);
+      await users.insertOne({
+        _id: new ObjectId(),
+        email,
+        name: 'Super Admin',
+        passwordHash,
+        roles: ['super_admin'],
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      console.log('  🔑 Super admin создан в manager DB');
+      return;
+    }
+
+    // Check if role or password needs fixing
+    const hasSuperAdminRole = user.roles?.includes('super_admin');
+    const passwordMatch = user.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
+
+    if (!hasSuperAdminRole || !passwordMatch) {
+      const updates: Record<string, unknown> = {};
+      if (!hasSuperAdminRole) {
+        const roles = Array.isArray(user.roles) ? [...new Set([...user.roles, 'super_admin'])] : ['super_admin'];
+        updates.roles = roles;
+      }
+      if (!passwordMatch) {
+        updates.passwordHash = await bcrypt.hash(password, 10);
+      }
+      await users.updateOne({ _id: user._id }, { $set: updates });
+      console.log(`  🔑 Super admin исправлен: ${!hasSuperAdminRole ? 'role ' : ''}${!passwordMatch ? 'password' : ''}`);
+    }
+  } finally {
+    await client.close();
+  }
+}
+
 export default async function globalSetup() {
   console.log('\n🚀 Global Setup\n');
 
@@ -69,7 +127,7 @@ export default async function globalSetup() {
   if (!baseUrl) {
     console.error('❌ BASE_URL не задан!\n');
     console.error('Добавьте в .env:');
-    console.error('  BASE_URL=https://kompot-stage.up.railway.app\n');
+    console.error('  BASE_URL=https://stage.kompot.ai\n');
     process.exit(1);
   }
 
@@ -144,4 +202,9 @@ export default async function globalSetup() {
   }
 
   console.log('═'.repeat(60) + '\n');
+
+  // Ensure super admin exists with correct credentials before tests start
+  if (hasMongoDB && hasSuperAdmin) {
+    await ensureSuperAdmin(process.env.MONGODB_URI!);
+  }
 }

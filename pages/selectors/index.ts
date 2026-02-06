@@ -9,6 +9,7 @@ import { CommonSelectors } from './common.selectors';
 import { AgreementsSelectors, AgreementTemplatesSelectors } from './agreements.selectors';
 import { PipelinesSelectors } from './pipelines.selectors';
 import { ProductsSelectors } from './products.selectors';
+import { ChatSelectors } from './chat.selectors';
 
 export const Selectors = {
   login: LoginSelectors,
@@ -19,6 +20,7 @@ export const Selectors = {
   agreementTemplates: AgreementTemplatesSelectors,
   pipelines: PipelinesSelectors,
   products: ProductsSelectors,
+  chat: ChatSelectors,
 } as const;
 
 // Re-export individual selectors for direct import
@@ -31,4 +33,5 @@ export {
   AgreementTemplatesSelectors,
   PipelinesSelectors,
   ProductsSelectors,
+  ChatSelectors,
 };

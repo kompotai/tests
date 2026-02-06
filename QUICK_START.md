@@ -23,7 +23,7 @@ cp .env.example .env
 Отредактируйте `.env` и укажите ваши тестовые данные:
 
 ```env
-BASE_URL=https://kompot-stage.up.railway.app
+BASE_URL=https://stage.kompot.ai
 WORKSPACE_ID=your_test_workspace
 TEST_USER_EMAIL=your_test_email@example.com
 TEST_USER_PASSWORD=your_test_password

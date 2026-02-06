@@ -10,6 +10,7 @@
 import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { TEST_CONTACTS } from './agreements.fixture';
+import { getSetupTemplateName } from './agreement-setup.utils';
 
 ownerTest.describe('Agreement Creation', () => {
   // Set longer timeout for all tests in this suite
@@ -25,6 +26,16 @@ ownerTest.describe('Agreement Creation', () => {
   // Use patterns to find templates - comprehensive test creates these
   // Comprehensive Template has exactly 2 signatories
   const MULTI_SIGNATORY_TEMPLATE_PATTERN = /Comprehensive Template \d+/;
+
+  // Find multi-signatory template: setup template first, then regex fallback
+  function findMultiSignatoryTemplate(options: string[]): string | undefined {
+    const setupName = getSetupTemplateName();
+    if (setupName) {
+      const match = options.find(opt => opt === setupName || opt === `${setupName} (Contract)`);
+      if (match) return match;
+    }
+    return findMultiSignatoryTemplate(options);
+  }
 
   ownerTest.beforeEach(async ({ page }) => {
     agreementsPage = new AgreementsPage(page);
@@ -45,7 +56,7 @@ ownerTest.describe('Agreement Creation', () => {
       await templateSelect.waitFor({ state: 'visible' });
 
       const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
+      const comprehensiveTemplate = findMultiSignatoryTemplate(options);
 
       if (!comprehensiveTemplate) {
         ownerTest.skip(true, 'No multi-signatory template found - run comprehensive tests first');
@@ -79,7 +90,7 @@ ownerTest.describe('Agreement Creation', () => {
       await templateSelect.waitFor({ state: 'visible' });
 
       const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
+      const comprehensiveTemplate = findMultiSignatoryTemplate(options);
 
       if (!comprehensiveTemplate) {
         ownerTest.skip(true, 'No multi-signatory template found');
@@ -115,7 +126,7 @@ ownerTest.describe('Agreement Creation', () => {
       await templateSelect.waitFor({ state: 'visible' });
 
       const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
+      const comprehensiveTemplate = findMultiSignatoryTemplate(options);
 
       if (!comprehensiveTemplate) {
         ownerTest.skip(true, 'No multi-signatory template found');
@@ -167,7 +178,7 @@ ownerTest.describe('Agreement Creation', () => {
       await templateSelect.waitFor({ state: 'visible' });
 
       const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
+      const comprehensiveTemplate = findMultiSignatoryTemplate(options);
 
       if (!comprehensiveTemplate) {
         ownerTest.skip(true, 'No multi-signatory template found');
@@ -199,7 +210,7 @@ ownerTest.describe('Agreement Creation', () => {
       await templateSelect.waitFor({ state: 'visible' });
 
       const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
+      const comprehensiveTemplate = findMultiSignatoryTemplate(options);
 
       if (!comprehensiveTemplate) {
         ownerTest.skip(true, 'No multi-signatory template found');
@@ -238,7 +249,7 @@ ownerTest.describe('Agreement Creation', () => {
       await templateSelect.waitFor({ state: 'visible' });
 
       const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
+      const comprehensiveTemplate = findMultiSignatoryTemplate(options);
 
       if (!comprehensiveTemplate) {
         ownerTest.skip(true, 'No multi-signatory template found');
@@ -275,7 +286,7 @@ ownerTest.describe('Agreement Creation', () => {
       await templateSelect.waitFor({ state: 'visible' });
 
       const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
+      const comprehensiveTemplate = findMultiSignatoryTemplate(options);
 
       if (!comprehensiveTemplate) {
         ownerTest.skip(true, 'No multi-signatory template found');
@@ -319,7 +330,7 @@ ownerTest.describe('Agreement Creation', () => {
       await templateSelect.waitFor({ state: 'visible' });
 
       const options = await templateSelect.locator('option').allTextContents();
-      const comprehensiveTemplate = options.find(opt => MULTI_SIGNATORY_TEMPLATE_PATTERN.test(opt));
+      const comprehensiveTemplate = findMultiSignatoryTemplate(options);
 
       if (!comprehensiveTemplate) {
         ownerTest.skip(true, 'No multi-signatory template found');
