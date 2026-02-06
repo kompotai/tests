@@ -9,6 +9,8 @@
     "test:headed": "npx playwright test --headed",
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
+    "test:agreements": "INCLUDE_AGREEMENTS=true npx playwright test --project=agreements",
+    "test:all": "INCLUDE_AGREEMENTS=true npx playwright test",
     "test:setup": "FORCE_SETUP=true npx playwright test --project=company-owner",
     "test:setup:stage": "doppler run --project kompot --config stage -- env FORCE_SETUP=true npx playwright test --project=company-owner",
     "report": "npx playwright show-report",

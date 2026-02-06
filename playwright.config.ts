@@ -22,6 +22,9 @@ const authExists = fs.existsSync('.auth/owner.json');
 // Skip dependencies if in shard mode OR auth already exists and we're running specific projects
 const skipDeps = isShardMode || (authExists && process.env.SKIP_DEPS === 'true');
 
+// Opt-in projects: only included when explicitly requested via --project or env var
+const includeAgreements = process.env.INCLUDE_AGREEMENTS === 'true';
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -138,16 +141,17 @@ export default defineConfig({
       },
     },
     // 05: Agreements - Templates and Agreements CRUD
-    {
+    // Opt-in: run with INCLUDE_AGREEMENTS=true or --project=agreements
+    ...(includeAgreements ? [{
       name: 'agreements',
       testDir: './tests/e2e/05-agreements',
-      dependencies: skipDeps ? [] : ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'] as string[],
       fullyParallel: false, // Sequential - templates before agreements
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/owner.json',
       },
-    },
+    }] : []),
     // 06a: Email Campaigns - Email providers, templates, campaigns
     {
       name: 'email-campaigns',

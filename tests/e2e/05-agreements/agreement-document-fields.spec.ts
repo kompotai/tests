@@ -13,6 +13,7 @@ import { WORKSPACE_ID } from '@fixtures/users';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { TEST_CONTACTS } from './agreements.fixture';
 import { Page } from '@playwright/test';
+import { getSetupTemplateName } from './agreement-setup.utils';
 
 // Helper to find a template with document fields and 2 signer roles
 async function findTemplateWithDocFieldsAndRoles(page: Page): Promise<string | null> {
@@ -20,29 +21,36 @@ async function findTemplateWithDocFieldsAndRoles(page: Page): Promise<string | n
   await templateSelect.waitFor({ state: 'visible' });
 
   const options = await templateSelect.locator('option').allTextContents();
-  // Comprehensive Template has document fields (text, number) and 2 roles
+
+  // Build candidates: setup template first, then regex matches
+  const setupName = getSetupTemplateName();
+  const candidates: string[] = [];
+  if (setupName) {
+    const match = options.find(opt => opt === setupName || opt === `${setupName} (Contract)`);
+    if (match) candidates.push(match);
+  }
   const patterns = [/Comprehensive Template \d+/];
-
   for (const pattern of patterns) {
-    const candidates = options.filter(opt => pattern.test(opt));
-    for (const templateLabel of candidates) {
-      await templateSelect.selectOption({ label: templateLabel });
-      await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(500);
+    candidates.push(...options.filter(opt => pattern.test(opt) && !candidates.includes(opt)));
+  }
 
-      // Check for document fields and signer roles
-      const hasDocFields = await page.locator('text=Document Fields').isVisible({ timeout: 2000 }).catch(() => false);
-      const signerRole1 = page.locator('[data-testid="signer-role-1"]');
-      const signerRole2 = page.locator('[data-testid="signer-role-2"]');
-      const hasRole1 = await signerRole1.isVisible({ timeout: 1000 }).catch(() => false);
-      const hasRole2 = await signerRole2.isVisible({ timeout: 500 }).catch(() => false);
+  for (const templateLabel of candidates) {
+    await templateSelect.selectOption({ label: templateLabel });
+    await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(500);
 
-      if (hasDocFields && hasRole1 && hasRole2) {
-        console.log(`[helper] Found template with doc fields and 2 roles: ${templateLabel}`);
-        return templateLabel.replace(/\s*\(Contract\)$/, '');
-      }
-      console.log(`[helper] Template ${templateLabel}: docFields=${hasDocFields}, roles=${hasRole1 && hasRole2}`);
+    // Check for document fields and signer roles
+    const hasDocFields = await page.locator('text=Document Fields').isVisible({ timeout: 2000 }).catch(() => false);
+    const signerRole1 = page.locator('[data-testid="signer-role-1"]');
+    const signerRole2 = page.locator('[data-testid="signer-role-2"]');
+    const hasRole1 = await signerRole1.isVisible({ timeout: 1000 }).catch(() => false);
+    const hasRole2 = await signerRole2.isVisible({ timeout: 500 }).catch(() => false);
+
+    if (hasDocFields && hasRole1 && hasRole2) {
+      console.log(`[helper] Found template with doc fields and 2 roles: ${templateLabel}`);
+      return templateLabel.replace(/\s*\(Contract\)$/, '');
     }
+    console.log(`[helper] Template ${templateLabel}: docFields=${hasDocFields}, roles=${hasRole1 && hasRole2}`);
   }
   return null;
 }
