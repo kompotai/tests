@@ -207,7 +207,18 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
-    // 10: Pipelines - pipeline settings and stages management
+    // 10: Chat - messaging and chat functionality
+    {
+      name: 'chat',
+      testDir: './tests/e2e/10-chat',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 11: Pipelines - pipeline settings and stages management
     {
       name: 'pipelines',
       testDir: './tests/e2e/10-pipelines',
