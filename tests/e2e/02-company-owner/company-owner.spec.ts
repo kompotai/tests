@@ -116,51 +116,25 @@ async function registerOwner(page: Page) {
   await page.goto('/account/register');
   await page.waitForLoadState('networkidle');
 
+  // Fill personal info
   await page.fill('input#name', OWNER.name);
   await page.fill('input#register-email', OWNER.email);
   await page.fill('input#register-password', OWNER.password);
 
+  // Fill company info (workspace created in one step)
+  await page.fill('input#company-name', `${WORKSPACE_ID} Workspace`);
+  await page.waitForTimeout(300); // Wait for wsid auto-generation
+
+  // Override auto-generated wsid with our test workspace ID
+  await page.locator('input#wsid').clear();
+  await page.locator('input#wsid').fill(WORKSPACE_ID);
+
+  // Accept terms
   await page.locator('input[type="checkbox"]').check();
   await page.click('button[type="submit"]');
 
-  // After registration, redirects to /manage where phone is required first
-  await page.waitForURL('**/manage**', { timeout: 20000 });
-  await page.waitForLoadState('networkidle');
-
-  // Phone step is required on /manage after first registration
-  console.log(`[REG] Current URL: ${page.url()}`);
-
-  // Check if phone form is shown (first time registration)
-  const phoneSubmitButton = page.locator('[data-testid="phone-form-button-submit"]');
-  const hasPhoneForm = await phoneSubmitButton.isVisible({ timeout: 5000 }).catch(() => false);
-
-  if (hasPhoneForm) {
-    console.log('[REG] Phone form detected, filling phone number');
-    await page.locator('input[type="tel"]').fill('5551234567');
-    await phoneSubmitButton.click();
-    // Wait for page to reload after phone submit
-    await page.waitForLoadState('networkidle');
-    console.log('[REG] Phone submitted, waiting for workspace form');
-  }
-
-  // Now wait for CreateWorkspaceCard form
-  const createWorkspaceForm = page.locator('[data-testid="create-workspace-name"]');
-  await createWorkspaceForm.waitFor({ state: 'visible', timeout: 30000 });
-
-  await createWorkspaceForm.fill(`${WORKSPACE_ID} Workspace`);
-  await page.waitForTimeout(500);
-
-  await page.locator('input#wsid').clear();
-  await page.locator('input#wsid').fill(WORKSPACE_ID);
-  await page.locator('input#email').clear();
-  await page.locator('input#email').fill(OWNER.email);
-  await page.fill('input#password', OWNER.password);
-  await page.click('button[type="submit"]');
-
-  // Enter workspace
-  await page.waitForSelector('text=Enter', { timeout: 15000 });
-  await page.click('button:has-text("Enter")');
-  await page.waitForURL('**/ws**', { timeout: 15000 });
+  // After registration, redirects directly to /ws/{wsid}
+  await page.waitForURL('**/ws**', { timeout: 30000 });
 
   await page.context().storageState({ path: path.join(AUTH_DIR, 'owner.json') });
   console.log('✅ Owner зарегистрирован, workspace создан');
