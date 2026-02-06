@@ -10,6 +10,7 @@ import { AgreementsSelectors, AgreementTemplatesSelectors } from './agreements.s
 import { PipelinesSelectors } from './pipelines.selectors';
 import { ProductsSelectors } from './products.selectors';
 import { ChatSelectors } from './chat.selectors';
+import { AIAssistantSelectors } from './ai-assistant.selectors';
 
 export const Selectors = {
   login: LoginSelectors,
@@ -21,6 +22,7 @@ export const Selectors = {
   pipelines: PipelinesSelectors,
   products: ProductsSelectors,
   chat: ChatSelectors,
+  aiAssistant: AIAssistantSelectors,
 } as const;
 
 // Re-export individual selectors for direct import
@@ -34,4 +36,5 @@ export {
   PipelinesSelectors,
   ProductsSelectors,
   ChatSelectors,
+  AIAssistantSelectors,
 };

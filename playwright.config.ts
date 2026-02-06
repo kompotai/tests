@@ -251,6 +251,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 12: AI Assistant - Internal AI chatbot tests
+    {
+      name: 'ai-assistant',
+      testDir: './tests/e2e/12-ai-assistant',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
