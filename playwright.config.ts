@@ -284,6 +284,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 15: Events - event management
+    {
+      name: 'events',
+      testDir: './tests/e2e/15-events',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
