@@ -13,12 +13,12 @@ import { expect, Page, BrowserContext } from '@playwright/test';
 
 export async function navigateTo(page: Page, path: string): Promise<void> {
   await page.goto(path);
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 }
 
 export async function reloadPage(page: Page): Promise<void> {
   await page.reload();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 }
 
 // ============================================
@@ -88,12 +88,12 @@ export async function clickButtonByTestId(page: Page, testId: string): Promise<v
 
 export async function clickLink(page: Page, linkText: string): Promise<void> {
   await page.locator(`a:has-text("${linkText}")`).first().click();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 }
 
 export async function clickSubmit(page: Page): Promise<void> {
   await page.locator('button[type="submit"]').click();
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 }
 
 // ============================================
@@ -198,7 +198,7 @@ export async function waitForLoading(page: Page): Promise<void> {
   if (await spinner.isVisible({ timeout: 1000 }).catch(() => false)) {
     await spinner.waitFor({ state: 'hidden', timeout: 30000 });
   }
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 }
 
 export async function waitFor(page: Page, ms: number): Promise<void> {

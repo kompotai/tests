@@ -1,0 +1,309 @@
+{
+  "pageWidth": 595,
+  "pageHeight": 842,
+  "generatedAt": "2026-01-29T19:28:28.622Z",
+  "description": "Field coordinates in editor units (top-left origin). Use these values directly for field positioning.",
+  "page1": [
+    {
+      "name": "Company Signature",
+      "type": "signature",
+      "page": 1,
+      "x": 50,
+      "y": 162,
+      "width": 200,
+      "height": 60
+    },
+    {
+      "name": "Company Initials",
+      "type": "initials",
+      "page": 1,
+      "x": 350,
+      "y": 172,
+      "width": 80,
+      "height": 50
+    },
+    {
+      "name": "Creation Date",
+      "type": "creationDate",
+      "page": 1,
+      "x": 50,
+      "y": 312,
+      "width": 150,
+      "height": 30
+    },
+    {
+      "name": "Document Text Field",
+      "type": "text",
+      "page": 1,
+      "x": 300,
+      "y": 312,
+      "width": 200,
+      "height": 30
+    },
+    {
+      "name": "Document Number Field",
+      "type": "number",
+      "page": 1,
+      "x": 50,
+      "y": 412,
+      "width": 100,
+      "height": 30
+    }
+  ],
+  "page2": [
+    {
+      "name": "Contact Name",
+      "type": "contact.name",
+      "page": 2,
+      "x": 50,
+      "y": 107,
+      "width": 180,
+      "height": 35
+    },
+    {
+      "name": "Contact Email",
+      "type": "contact.email",
+      "page": 2,
+      "x": 300,
+      "y": 107,
+      "width": 220,
+      "height": 35
+    },
+    {
+      "name": "Contact Phone",
+      "type": "contact.phone",
+      "page": 2,
+      "x": 50,
+      "y": 187,
+      "width": 150,
+      "height": 35
+    },
+    {
+      "name": "Contact Company",
+      "type": "contact.company",
+      "page": 2,
+      "x": 280,
+      "y": 187,
+      "width": 180,
+      "height": 35
+    },
+    {
+      "name": "Contact Address",
+      "type": "contact.address",
+      "page": 2,
+      "x": 50,
+      "y": 267,
+      "width": 400,
+      "height": 35
+    },
+    {
+      "name": "Signature",
+      "type": "signature",
+      "page": 2,
+      "x": 50,
+      "y": 352,
+      "width": 200,
+      "height": 60
+    },
+    {
+      "name": "Initials",
+      "type": "initials",
+      "page": 2,
+      "x": 350,
+      "y": 362,
+      "width": 80,
+      "height": 50
+    },
+    {
+      "name": "Date Signed",
+      "type": "dateSigned",
+      "page": 2,
+      "x": 50,
+      "y": 482,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Full Name",
+      "type": "fullName",
+      "page": 2,
+      "x": 250,
+      "y": 482,
+      "width": 150,
+      "height": 30
+    },
+    {
+      "name": "Signer Email",
+      "type": "email",
+      "page": 2,
+      "x": 420,
+      "y": 482,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Signer Company",
+      "type": "company",
+      "page": 2,
+      "x": 50,
+      "y": 532,
+      "width": 180,
+      "height": 30
+    },
+    {
+      "name": "Text Input",
+      "type": "text",
+      "page": 2,
+      "x": 280,
+      "y": 532,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Date Input",
+      "type": "date",
+      "page": 2,
+      "x": 420,
+      "y": 532,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Checkbox",
+      "type": "checkbox",
+      "page": 2,
+      "x": 50,
+      "y": 637,
+      "width": 25,
+      "height": 25
+    }
+  ],
+  "page3": [
+    {
+      "name": "Contact Name",
+      "type": "contact.name",
+      "page": 3,
+      "x": 50,
+      "y": 107,
+      "width": 180,
+      "height": 35
+    },
+    {
+      "name": "Contact Email",
+      "type": "contact.email",
+      "page": 3,
+      "x": 300,
+      "y": 107,
+      "width": 220,
+      "height": 35
+    },
+    {
+      "name": "Contact Phone",
+      "type": "contact.phone",
+      "page": 3,
+      "x": 50,
+      "y": 187,
+      "width": 150,
+      "height": 35
+    },
+    {
+      "name": "Contact Company",
+      "type": "contact.company",
+      "page": 3,
+      "x": 280,
+      "y": 187,
+      "width": 180,
+      "height": 35
+    },
+    {
+      "name": "Contact Address",
+      "type": "contact.address",
+      "page": 3,
+      "x": 50,
+      "y": 267,
+      "width": 400,
+      "height": 35
+    },
+    {
+      "name": "Signature",
+      "type": "signature",
+      "page": 3,
+      "x": 50,
+      "y": 352,
+      "width": 200,
+      "height": 60
+    },
+    {
+      "name": "Initials",
+      "type": "initials",
+      "page": 3,
+      "x": 350,
+      "y": 362,
+      "width": 80,
+      "height": 50
+    },
+    {
+      "name": "Date Signed",
+      "type": "dateSigned",
+      "page": 3,
+      "x": 50,
+      "y": 482,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Full Name",
+      "type": "fullName",
+      "page": 3,
+      "x": 250,
+      "y": 482,
+      "width": 150,
+      "height": 30
+    },
+    {
+      "name": "Signer Email",
+      "type": "email",
+      "page": 3,
+      "x": 420,
+      "y": 482,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Signer Company",
+      "type": "company",
+      "page": 3,
+      "x": 50,
+      "y": 532,
+      "width": 180,
+      "height": 30
+    },
+    {
+      "name": "Text Input",
+      "type": "text",
+      "page": 3,
+      "x": 280,
+      "y": 532,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Date Input",
+      "type": "date",
+      "page": 3,
+      "x": 420,
+      "y": 532,
+      "width": 120,
+      "height": 30
+    },
+    {
+      "name": "Checkbox",
+      "type": "checkbox",
+      "page": 3,
+      "x": 50,
+      "y": 637,
+      "width": 25,
+      "height": 25
+    }
+  ]
+}

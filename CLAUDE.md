@@ -14,11 +14,79 @@ Always respond in the same language that the developer uses to communicate with 
 
 4. **Improvements require approval**: If you see something that can be improved, first inform or ask about it. Only then, after agreement, take action.
 
+## ⛔ Git — ОБЯЗАТЕЛЬНО
+
+### Ветки и параллельная работа
+
+**По умолчанию работаем в `main`.** Переключение в другую ветку требует осторожности!
+
+**ПЕРЕД переключением ветки — ОБЯЗАТЕЛЬНО:**
+1. **Спросить пользователя** — "Нужно переключиться в ветку X. В других терминалах запущен Claude Code?"
+2. **НЕ использовать `git stash`** — создаёт путаницу для других процессов
+
+### Коммиты
+
+**ЗАПРЕЩЕНО добавлять в коммиты:**
+- `Co-Authored-By:` строки (НЕ указывать AI как со-автора)
+- Упоминания Claude, AI, GPT в commit message
+- Автоматически генерируемые подписи
+
+**Автор коммита — только разработчик.** Git config определяет автора.
+
+## GitHub Actions
+
+- **Workflow runs**: https://github.com/kompotai/tests/actions
+- **Workflow file**: `.github/workflows/e2e-stage.yml`
+
+### Triggers
+
+1. **Push to main** — when tests are updated
+2. **repository_dispatch** — triggered by kompot.ai deploy (via `trigger-tests.yml` in kompot.ai repo)
+3. **Manual** — workflow_dispatch with optional commit SHA
+
+### Note on Actor
+
+Dispatched runs show as "Andrew1326" because `TESTS_DISPATCH_TOKEN` in kompot.ai secrets is his PAT. To change the displayed actor, replace the token with another user's PAT.
+
 ## Testing Environment
 
 - Tests run **locally** or on **stage** environment only
 - **NEVER** run tests against production: `kompot.ai`
 - E2E tests verify possible user scenarios
+
+## Timeouts and Waits
+
+**ЗАПРЕЩЕНО использовать:**
+
+| Запрещено | Почему |
+|-----------|--------|
+| `test.setTimeout(120000)` | Увеличение таймаута теста — признак плохого дизайна |
+| `page.waitForTimeout(3000)` | Жёсткие паузы делают тесты медленными и нестабильными |
+| Любые таймауты > 10 секунд | Если требуется больше — проблема в тесте или приложении |
+
+**Вместо этого использовать:**
+
+```typescript
+// ❌ Плохо
+await page.waitForTimeout(3000);
+
+// ✅ Хорошо — ждём конкретное условие
+await element.waitFor({ state: 'visible', timeout: 10000 });
+await page.locator('text=Success').waitFor({ state: 'visible' });
+
+// ❌ Плохо
+test.setTimeout(120000);
+
+// ✅ Хорошо — если тест долгий, разбить на несколько
+test('part 1: setup', async () => { ... });
+test('part 2: verify', async () => { ... });
+```
+
+**Принципы:**
+- Используй `waitFor()` с конкретными условиями
+- Стандартный таймаут `10000ms` достаточен для большинства операций
+- Если элемент не появляется за 10 секунд — проблема в приложении, а не в тесте
+- Длинные тесты разбивай на части с `describe` блоками
 
 ## Project Overview
 

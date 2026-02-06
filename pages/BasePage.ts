@@ -9,13 +9,13 @@ import { Page, expect } from '@playwright/test';
 import { Selectors } from './selectors';
 
 export abstract class BasePage {
-  constructor(protected page: Page) {}
+  constructor(public readonly page: Page) {}
 
   // ============================================
   // Navigation
   // ============================================
 
-  abstract readonly path: string;
+  abstract get path(): string;
 
   async goto(): Promise<void> {
     await this.page.goto(this.path);
@@ -23,7 +23,12 @@ export abstract class BasePage {
   }
 
   async waitForPageLoad(): Promise<void> {
-    await this.page.waitForLoadState('networkidle');
+    // Use 'load' state first, then try networkidle with shorter timeout
+    await this.page.waitForLoadState('load');
+    // Try networkidle but don't fail if it times out (some pages have persistent connections)
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {
+      // Ignore timeout - page is already loaded, just has ongoing network activity
+    });
     await this.dismissOverlays();
   }
 
@@ -32,11 +37,13 @@ export abstract class BasePage {
   // ============================================
 
   async waitForSpinner(): Promise<void> {
-    const spinner = this.page.locator(Selectors.common.spinner).first();
-    if (await spinner.isVisible({ timeout: 500 }).catch(() => false)) {
-      await spinner.waitFor({ state: 'hidden', timeout: 30000 });
+    // Wait for form/button spinners to finish (not background page spinners)
+    // Use button spinner or form-specific spinner, with shorter timeout
+    const formSpinner = this.page.locator('button .animate-spin, [data-testid*="form"] .animate-spin, form .animate-spin').first();
+    if (await formSpinner.isVisible({ timeout: 500 }).catch(() => false)) {
+      await formSpinner.waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {});
     }
-    await this.page.waitForLoadState('networkidle');
+    await this.page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
   }
 
   // ============================================
