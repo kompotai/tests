@@ -73,6 +73,7 @@ export default defineConfig({
 
     // Navigation timeout
     navigationTimeout: 15 * 1000,
+
   },
 
   // Configure projects - sequential flow
@@ -234,3 +235,5 @@ export default defineConfig({
   //   reuseExistingServer: !process.env.CI,
   // },
 });
+
+
