@@ -87,19 +87,13 @@ test.describe('Security: Legitimate Access Verification', () => {
   });
 
   test('LEG3: Company owner CAN see their own workspaces', async ({ page }) => {
-    // Use saved auth state if available
-    const authFile = '.auth/owner.json';
-    if (fs.existsSync(authFile)) {
-      const storageState = JSON.parse(fs.readFileSync(authFile, 'utf-8'));
-      await page.context().addCookies(storageState.cookies || []);
-    } else {
-      // Login manually via admin-login
-      await page.goto('/account/admin-login');
-      await page.locator('[data-testid="login-input-email"]').fill(OWNER.email);
-      await page.locator('[data-testid="login-input-password"]').fill(OWNER.password);
-      await page.click('button[type="submit"]');
-      await page.waitForURL(/\/manage/, { timeout: 30000 });
-    }
+    // Always login via admin-login for manage dashboard access
+    // (workspace auth state has wsid which prevents manage API from listing workspaces)
+    await page.goto('/account/admin-login');
+    await page.locator('[data-testid="login-input-email"]').fill(OWNER.email);
+    await page.locator('[data-testid="login-input-password"]').fill(OWNER.password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL(/\/manage/, { timeout: 30000 });
 
     // Navigate to manage dashboard
     await page.goto('/manage');

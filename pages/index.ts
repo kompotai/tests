@@ -12,5 +12,9 @@ export { AgreementTemplatesPage, type TemplateData, type TemplateFieldData } fro
 export { PublicSigningPage, type SignerIdentity } from './PublicSigningPage';
 export { MeetingsPage } from './MeetingsPage';
 export { EmailCampaignsPage } from './EmailCampaignsPage';
+export { PipelinesPage } from './PipelinesPage';
+export { ProductsPage, type ProductData } from './ProductsPage';
+export { ChatPage } from './ChatPage';
+export { AIAssistantPage } from './AIAssistantPage';
 export { InvoicesPage, type InvoiceData } from './InvoicesPage';
 export { PaymentsPage, type PaymentData } from './PaymentsPage';

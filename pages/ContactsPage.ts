@@ -71,6 +71,17 @@ export class ContactsPage extends BasePage {
     await this.openCreateForm();
     await this.fillForm(data);
     await this.submitForm();
+    // Wait for form to close — if it doesn't close, something went wrong with submission
+    const form = this.page.locator('[data-testid="contact-form"]').first();
+    const isClosed = await form.waitFor({ state: 'hidden', timeout: 10000 }).then(() => true).catch(() => false);
+    if (!isClosed) {
+      // Check if there's an error message visible
+      const errorMsg = await this.page.locator('[role="alert"], .text-red-500, .text-destructive').first()
+        .textContent({ timeout: 1000 }).catch(() => 'unknown');
+      throw new Error(`Contact form did not close after submit. Error: ${errorMsg}`);
+    }
+    // Refresh the page to ensure table shows new data
+    await this.goto();
   }
 
   async fillForm(data: ContactData): Promise<void> {
@@ -287,9 +298,15 @@ export class ContactsPage extends BasePage {
   }
 
   async clickRowEdit(identifier: string): Promise<void> {
+    // Wait for the row to be visible before trying to click edit
+    const row = this.page.locator(this.selectors.row(identifier)).first();
+    await row.waitFor({ state: 'visible', timeout: 10000 });
     const editBtn = this.page.locator(this.selectors.rowEditButton(identifier)).first();
     await editBtn.click();
-    await this.wait(1000);
+    // Wait for form to appear
+    await this.page.locator(this.selectors.form.container).first()
+      .waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    await this.wait(500);
   }
 
   async clickRowDelete(identifier: string): Promise<void> {
