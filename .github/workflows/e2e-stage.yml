@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   repository_dispatch:
-    types: [railway-deploy]
+    types: [coolify-deploy]
   workflow_dispatch:
     inputs:
       commit_sha:
@@ -33,7 +33,7 @@ jobs:
 
       - name: Wait for stage to be ready
         env:
-          STAGE_URL: https://kompot-stage.up.railway.app
+          STAGE_URL: https://stage.kompot.ai
           EXPECTED_VERSION: ${{ github.event.client_payload.commit_sha || inputs.commit_sha || '' }}
         run: |
           echo "Checking stage deployment..."
