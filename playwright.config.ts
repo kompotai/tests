@@ -63,6 +63,12 @@ export default defineConfig({
 
     // Navigation timeout
     navigationTimeout: 15 * 1000,
+
+    // HTTP Basic Auth for stage environment
+    httpCredentials: {
+      username: 'kompot',
+      password: 'stage2025!',
+    },
   },
 
   // Configure projects - sequential flow
