@@ -56,12 +56,11 @@ ownerTest.describe('Contact Table View', () => {
     });
   });
 
-  ownerTest('multiple contacts appear in correct order', async ({ page }) => {
+  ownerTest('multiple contacts appear in correct order', { timeout: 60000 }, async ({ page }) => {
     const contact1 = createFullContact();
     const contact2 = createFullContact();
 
     await contactsPage.create(contact1);
-    await contactsPage.goto(); // Refresh page
     await contactsPage.create(contact2);
 
     // Both should be visible

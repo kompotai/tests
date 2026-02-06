@@ -5,6 +5,7 @@
 import { expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 import { Selectors } from './selectors';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 export interface TaskData {
   name: string;
@@ -16,7 +17,7 @@ export interface TaskData {
 }
 
 export class TasksPage extends BasePage {
-  readonly path = `/ws/${process.env.WS_MEGATEST_ID || 'megatest'}/tasks`;
+  get path() { return `/ws/${WORKSPACE_ID}/tasks`; }
 
   private get s() {
     return Selectors.tasks;
