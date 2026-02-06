@@ -262,6 +262,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 13: Payments - payment access and workflows
+    {
+      name: 'payments',
+      testDir: './tests/e2e/13-payments',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - payment operations depend on each other
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests

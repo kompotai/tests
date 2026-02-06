@@ -16,3 +16,5 @@ export { PipelinesPage } from './PipelinesPage';
 export { ProductsPage, type ProductData } from './ProductsPage';
 export { ChatPage } from './ChatPage';
 export { AIAssistantPage } from './AIAssistantPage';
+export { InvoicesPage, type InvoiceData } from './InvoicesPage';
+export { PaymentsPage, type PaymentData } from './PaymentsPage';
