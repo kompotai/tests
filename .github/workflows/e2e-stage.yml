@@ -105,64 +105,7 @@ jobs:
           path: playwright-report/
           retention-days: 7
 
-  # Shard 1: Agreements (heaviest - ~14 min)
-  shard-agreements:
-    name: Shard 1 - Agreements
-    needs: setup
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install Doppler CLI
-        uses: dopplerhq/cli-action@v3
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
-
-      - name: Download auth state
-        uses: actions/download-artifact@v4
-        with:
-          name: auth-state
-          path: .auth/
-
-      - name: Run agreements tests
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-          PW_WORKERS: '2'
-          SHARD_MODE: 'true'
-        run: |
-          doppler run --project kompot --config stagetest -- \
-            npx playwright test \
-              --project=agreements \
-              --workers=2 \
-              --max-failures=5
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: shard-1-report
-          path: playwright-report/
-          retention-days: 7
-
-      - name: Upload test artifacts
-        uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: shard-1-artifacts
-          path: test-results/
-          retention-days: 7
+  # Shard 1 (Agreements) removed — run separately via e2e-agreements.yml
 
   # Shard 2: Contacts + Opportunities (~5 min)
   shard-contacts-opportunities:
