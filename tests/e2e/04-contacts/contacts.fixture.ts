@@ -26,16 +26,22 @@ export function uniqueEmail(prefix: string): string {
   return `${prefix}-${uniqueSuffix()}@test.kompot.ai`;
 }
 
-/** Generate unique phone (US format) */
+/** Generate unique phone (US format, NANP-valid: exchange 200-999) */
 export function uniquePhone(): string {
   const suffix = uniqueSuffix();
-  return `+1202${suffix.slice(0, 3)}${suffix.slice(3, 7).padEnd(4, '0')}`;
+  // Ensure exchange number starts with 2-9 (NANP rules)
+  const exchange = String(200 + (parseInt(suffix.slice(0, 3)) % 800)).padStart(3, '0');
+  const subscriber = suffix.slice(3, 7).padEnd(4, '0');
+  return `+1202${exchange}${subscriber}`;
 }
 
-/** Generate unique phone (Russian format) */
+/** Generate unique phone (Russian format, 10 subscriber digits) */
 export function uniqueRuPhone(): string {
   const suffix = uniqueSuffix();
-  return `+7999${suffix.slice(0, 3)}${suffix.slice(3, 7).padEnd(4, '0')}`;
+  // Russian mobile: +7 9XX XXX XX XX (10 subscriber digits after +7)
+  const sub = suffix.slice(0, 3).padStart(3, '0');
+  const last = suffix.slice(3, 7).padEnd(4, '0');
+  return `+7999${sub}${last}`;
 }
 
 // ============================================
