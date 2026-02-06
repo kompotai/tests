@@ -25,9 +25,10 @@ export async function initApiAuth(): Promise<void> {
   try {
     const authState = JSON.parse(fs.readFileSync(authStatePath, 'utf-8'));
     const cookies = authState.cookies || [];
-    const sessionCookie = cookies.find((c: { name: string }) => c.name === 'auth_session');
-    if (sessionCookie) {
-      authCookie = `auth_session=${sessionCookie.value}`;
+    // Build cookie string from all stored cookies
+    const cookieStr = cookies.map((c: { name: string; value: string }) => `${c.name}=${c.value}`).join('; ');
+    if (cookieStr) {
+      authCookie = cookieStr;
     }
   } catch {
     console.warn('Could not read auth state file, API calls may fail');
@@ -54,7 +55,7 @@ export async function workspaceFetch(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'Cookie': `WORKSPACE_ID=${WSID}; ${authCookie || ''}`,
+    'Cookie': authCookie || '',
     ...options.headers,
   };
 

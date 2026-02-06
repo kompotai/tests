@@ -6,12 +6,10 @@
 
 import { Locator } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 export class EventsPage extends BasePage {
-  get path(): string {
-    const WS_ID = process.env.WS_ID || 'megatest';
-    return `/ws/${WS_ID}/events`;
-  }
+  get path() { return `/ws/${WORKSPACE_ID}/events`; }
 
   // ============================================
   // Main Page Elements

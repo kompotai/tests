@@ -8,7 +8,9 @@ import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { EventsPage } from '@pages/EventsPage';
 
 // Setup: Ensure at least one event exists for edit/filter tests
-ownerTest.beforeAll(async ({ page }) => {
+ownerTest.beforeAll(async ({ browser }) => {
+  const context = await browser.newContext({ storageState: '.auth/owner.json' });
+  const page = await context.newPage();
   const eventsPage = new EventsPage(page);
   await eventsPage.goto();
   await eventsPage.waitForPageLoad();
@@ -27,6 +29,8 @@ ownerTest.beforeAll(async ({ page }) => {
 
     await page.waitForLoadState('networkidle');
   }
+
+  await context.close();
 });
 
 ownerTest.describe('E1: View Events List', () => {
@@ -353,6 +357,7 @@ ownerTest.describe('E4: Filtering and Searching Events', () => {
     const clearedCount = await eventsPage.getEventsCount();
     expect(clearedCount).toBeGreaterThanOrEqual(originalCount);
   });
+});
 
 ownerTest.describe('E5: Delete Event', () => {
   let eventsPage: EventsPage;

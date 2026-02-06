@@ -13,6 +13,7 @@ import { WORKSPACE_ID } from '@fixtures/users';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { TEST_CONTACTS } from './agreements.fixture';
 import { Page } from '@playwright/test';
+import { getSetupTemplateName } from './agreement-setup.utils';
 
 // Helper to select a template that has signer roles (at least 2)
 async function selectTemplateWithRoles(page: Page, pattern: RegExp): Promise<string | null> {
@@ -20,7 +21,15 @@ async function selectTemplateWithRoles(page: Page, pattern: RegExp): Promise<str
   await templateSelect.waitFor({ state: 'visible' });
 
   const options = await templateSelect.locator('option').allTextContents();
-  const candidateTemplates = options.filter(opt => pattern.test(opt));
+
+  // Build candidates: setup template first, then regex matches
+  const setupName = getSetupTemplateName();
+  const candidateTemplates: string[] = [];
+  if (setupName) {
+    const match = options.find(opt => opt === setupName || opt === `${setupName} (Contract)`);
+    if (match) candidateTemplates.push(match);
+  }
+  candidateTemplates.push(...options.filter(opt => pattern.test(opt) && !candidateTemplates.includes(opt)));
 
   if (candidateTemplates.length === 0) {
     return null;
