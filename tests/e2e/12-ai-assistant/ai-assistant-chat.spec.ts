@@ -4,17 +4,17 @@
  * Тесты для Internal AI Assistant (чат-бот для сотрудников)
  */
 
-import { test, expect } from '@playwright/test';
+import { ownerTest, expect } from '@fixtures/auth.fixture';
+import { WORKSPACE_ID } from '@fixtures/users';
 import { AIAssistantPage } from '@pages/AIAssistantPage';
 
-test.describe('AI Assistant Chat', () => {
+ownerTest.describe('AI Assistant Chat', () => {
   let aiAssistant: AIAssistantPage;
 
-  test.beforeEach(async ({ page }) => {
+  ownerTest.beforeEach(async ({ page }) => {
     aiAssistant = new AIAssistantPage(page);
     // Переходим в workspace (не на /manage!)
-    const wsId = process.env.WS_ID || 'vishnevsky7';
-    await page.goto(`/ws/${wsId}`);
+    await page.goto(`/ws/${WORKSPACE_ID}`);
     await page.waitForLoadState('networkidle');
 
     // Закрываем cookie consent если есть
@@ -25,8 +25,8 @@ test.describe('AI Assistant Chat', () => {
     }
   });
 
-  test.describe('Opening and Closing', () => {
-    test('A1: can open AI Assistant panel', async ({ page }) => {
+  ownerTest.describe('Opening and Closing', () => {
+    ownerTest('A1: can open AI Assistant panel', async ({ page }) => {
       // Проверяем, что панель изначально закрыта
       await aiAssistant.expectPanelHidden();
 
@@ -40,7 +40,7 @@ test.describe('AI Assistant Chat', () => {
       await expect(page.locator('text="Internal AI Assistant"')).toBeVisible();
     });
 
-    test('A2: can close AI Assistant panel', async ({ page }) => {
+    ownerTest('A2: can close AI Assistant panel', async ({ page }) => {
       // Открываем
       await aiAssistant.open();
       await aiAssistant.expectPanelVisible();
@@ -52,7 +52,7 @@ test.describe('AI Assistant Chat', () => {
       await aiAssistant.expectPanelHidden();
     });
 
-    test('A3: panel shows welcome message', async ({ page }) => {
+    ownerTest('A3: panel shows welcome message', async ({ page }) => {
       await aiAssistant.open();
 
       // Проверяем, что есть приветственное сообщение от AI (содержит "Hey" + имя пользователя)
@@ -60,7 +60,7 @@ test.describe('AI Assistant Chat', () => {
       await expect(welcomeMessage).toBeVisible();
     });
 
-    test('A10: can minimize AI Assistant panel', async ({ page }) => {
+    ownerTest('A10: can minimize AI Assistant panel', async ({ page }) => {
       await aiAssistant.open();
       await aiAssistant.expectPanelVisible();
 
@@ -73,8 +73,8 @@ test.describe('AI Assistant Chat', () => {
     });
   });
 
-  test.describe('Messaging', () => {
-    test('A4: can send message and receive response', async ({ page }) => {
+  ownerTest.describe('Messaging', () => {
+    ownerTest('A4: can send message and receive response', async ({ page }) => {
       await aiAssistant.open();
 
       // Отправляем сообщение
@@ -90,7 +90,7 @@ test.describe('AI Assistant Chat', () => {
       expect(count).toBeGreaterThanOrEqual(2);
     });
 
-    test('A6: chat history is preserved after reopen', async ({ page }) => {
+    ownerTest('A6: chat history is preserved after reopen', async ({ page }) => {
       await aiAssistant.open();
 
       // Отправляем уникальное сообщение
@@ -110,7 +110,7 @@ test.describe('AI Assistant Chat', () => {
       await expect(savedMessage).toBeVisible({ timeout: 5000 });
     });
 
-    test('A8: AI understands Russian language', async ({ page }) => {
+    ownerTest('A8: AI understands Russian language', async ({ page }) => {
       await aiAssistant.open();
 
       // Отправляем сообщение на русском
@@ -125,7 +125,7 @@ test.describe('AI Assistant Chat', () => {
       expect(count).toBeGreaterThanOrEqual(2);
     });
 
-    test('A9: AI understands English language', async ({ page }) => {
+    ownerTest('A9: AI understands English language', async ({ page }) => {
       await aiAssistant.open();
 
       // Отправляем сообщение на английском
