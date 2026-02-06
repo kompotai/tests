@@ -8,6 +8,7 @@ import { OpportunitiesSelectors } from './opportunities.selectors';
 import { CommonSelectors } from './common.selectors';
 import { AgreementsSelectors, AgreementTemplatesSelectors } from './agreements.selectors';
 import { PipelinesSelectors } from './pipelines.selectors';
+import { ProductsSelectors } from './products.selectors';
 import { ChatSelectors } from './chat.selectors';
 
 export const Selectors = {
@@ -18,6 +19,7 @@ export const Selectors = {
   agreements: AgreementsSelectors,
   agreementTemplates: AgreementTemplatesSelectors,
   pipelines: PipelinesSelectors,
+  products: ProductsSelectors,
   chat: ChatSelectors,
 } as const;
 
@@ -30,5 +32,6 @@ export {
   AgreementsSelectors,
   AgreementTemplatesSelectors,
   PipelinesSelectors,
+  ProductsSelectors,
   ChatSelectors,
 };

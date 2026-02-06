@@ -229,6 +229,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 11: Products - product CRUD and categories
+    {
+      name: 'products',
+      testDir: './tests/e2e/11-products',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',
