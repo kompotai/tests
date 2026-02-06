@@ -273,6 +273,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 14: Tasks - CRUD operations on tasks
+    {
+      name: 'tasks',
+      testDir: './tests/e2e/14-tasks',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - CRUD operations
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests

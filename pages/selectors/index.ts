@@ -5,6 +5,7 @@
 import { LoginSelectors } from './login.selectors';
 import { ContactsSelectors } from './contacts.selectors';
 import { OpportunitiesSelectors } from './opportunities.selectors';
+import { TasksSelectors } from './tasks.selectors';
 import { CommonSelectors } from './common.selectors';
 import { AgreementsSelectors, AgreementTemplatesSelectors } from './agreements.selectors';
 import { PipelinesSelectors } from './pipelines.selectors';
@@ -18,6 +19,7 @@ export const Selectors = {
   login: LoginSelectors,
   contacts: ContactsSelectors,
   opportunities: OpportunitiesSelectors,
+  tasks: TasksSelectors,
   common: CommonSelectors,
   agreements: AgreementsSelectors,
   agreementTemplates: AgreementTemplatesSelectors,
@@ -34,6 +36,7 @@ export {
   LoginSelectors,
   ContactsSelectors,
   OpportunitiesSelectors,
+  TasksSelectors,
   CommonSelectors,
   AgreementsSelectors,
   AgreementTemplatesSelectors,
