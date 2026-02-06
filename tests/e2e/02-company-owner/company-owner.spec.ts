@@ -35,6 +35,27 @@ async function dismissCookieConsent(page: Page) {
   }
 }
 
+async function handlePhoneFormIfShown(page: Page) {
+  const phoneSubmitButton = page.locator('[data-testid="phone-form-button-submit"]');
+  const hasPhoneForm = await phoneSubmitButton.isVisible({ timeout: 3000 }).catch(() => false);
+  if (hasPhoneForm) {
+    console.log('[MANAGE] Phone form detected, filling phone number');
+    await page.locator('input[type="tel"]').fill('5551234567');
+    await phoneSubmitButton.click();
+    await page.waitForLoadState('networkidle');
+  }
+}
+
+async function adminLoginAndGoToManage(page: Page) {
+  await page.goto('/account/admin-login');
+  await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
+  await page.fill('[data-testid="login-input-email"]', OWNER.email);
+  await page.fill('[data-testid="login-input-password"]', OWNER.password);
+  await page.click('button[type="submit"]');
+  await page.waitForURL(/\/manage/, { timeout: 20000 });
+  await handlePhoneFormIfShown(page);
+}
+
 /**
  * Create test contacts in workspace database
  * Called AFTER workspace registration to ensure contacts aren't deleted by cleanup
@@ -308,24 +329,12 @@ test.describe.serial('Company Owner', () => {
   });
 
   test('CO1: Owner может войти через admin-login', async ({ page }) => {
-    await page.goto('/account/admin-login');
-    await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
-
-    await page.fill('[data-testid="login-input-email"]', OWNER.email);
-    await page.fill('[data-testid="login-input-password"]', OWNER.password);
-    await page.click('button[type="submit"]');
-
-    await page.waitForURL(/\/manage/, { timeout: 20000 });
+    await adminLoginAndGoToManage(page);
     expect(page.url()).toContain('/manage');
   });
 
   test('CO2: Owner видит свой workspace в manage', async ({ page }) => {
-    await page.goto('/account/admin-login');
-    await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
-    await page.fill('[data-testid="login-input-email"]', OWNER.email);
-    await page.fill('[data-testid="login-input-password"]', OWNER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/manage/, { timeout: 20000 });
+    await adminLoginAndGoToManage(page);
 
     await page.goto('/manage/workspaces');
     await page.waitForLoadState('networkidle');
@@ -383,12 +392,7 @@ test.describe.serial('Company Owner', () => {
   });
 
   test('CO4: Owner может войти в workspace из manage', async ({ page }) => {
-    await page.goto('/account/admin-login');
-    await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
-    await page.fill('[data-testid="login-input-email"]', OWNER.email);
-    await page.fill('[data-testid="login-input-password"]', OWNER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/manage/, { timeout: 20000 });
+    await adminLoginAndGoToManage(page);
 
     await page.goto('/manage/workspaces');
     await page.waitForLoadState('networkidle');
