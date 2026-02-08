@@ -8,7 +8,7 @@
  * just by typing text in the search field.
  */
 
-import { test, expect } from '@playwright/test';
+import { ownerTest as test, expect } from '@fixtures/auth.fixture';
 import { WORKSPACE_ID } from '@fixtures/users';
 
 test.describe('Payments - Invoice Selection Validation', () => {

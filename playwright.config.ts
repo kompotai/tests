@@ -53,12 +53,6 @@ export default defineConfig({
 
   // Shared settings for all projects
   use: {
-
-    httpCredentials: {
-      username: 'kompot',
-      password: 'stage2025!',
-    },
-
     // Base URL for all tests (required)
     baseURL: process.env.BASE_URL,
 
