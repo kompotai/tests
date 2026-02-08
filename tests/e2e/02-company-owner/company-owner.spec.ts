@@ -35,6 +35,29 @@ async function dismissCookieConsent(page: Page) {
   }
 }
 
+async function handlePhoneFormIfShown(page: Page) {
+  const phoneSubmitButton = page.locator('[data-testid="phone-form-button-submit"]');
+  const hasPhoneForm = await phoneSubmitButton.isVisible({ timeout: 3000 }).catch(() => false);
+  if (hasPhoneForm) {
+    console.log('[MANAGE] Phone form detected, filling phone number');
+    await page.locator('input[type="tel"]').fill('5551234567');
+    await phoneSubmitButton.click();
+    await page.waitForLoadState('networkidle');
+  }
+}
+
+async function adminLoginAndGoToManage(page: Page) {
+  await page.goto('/account/admin-login');
+  await page.waitForLoadState('domcontentloaded');
+
+  await page.getByPlaceholder(/email/i).fill(OWNER.email);
+  await page.getByPlaceholder(/password/i).fill(OWNER.password);
+  await page.getByRole('button', { name: /sign in|log in|login/i }).click();
+
+  await page.waitForURL(/\/manage/, { timeout: 20000 });
+  await handlePhoneFormIfShown(page);
+}
+
 /**
  * Create test contacts in workspace database
  * Called AFTER workspace registration to ensure contacts aren't deleted by cleanup
@@ -116,51 +139,25 @@ async function registerOwner(page: Page) {
   await page.goto('/account/register');
   await page.waitForLoadState('networkidle');
 
+  // Fill personal info
   await page.fill('input#name', OWNER.name);
   await page.fill('input#register-email', OWNER.email);
   await page.fill('input#register-password', OWNER.password);
 
+  // Fill company info (workspace created in one step)
+  await page.fill('input#company-name', `${WORKSPACE_ID} Workspace`);
+  await page.waitForTimeout(300); // Wait for wsid auto-generation
+
+  // Override auto-generated wsid with our test workspace ID
+  await page.locator('input#wsid').clear();
+  await page.locator('input#wsid').fill(WORKSPACE_ID);
+
+  // Accept terms
   await page.locator('input[type="checkbox"]').check();
   await page.click('button[type="submit"]');
 
-  // After registration, redirects to /manage where phone is required first
-  await page.waitForURL('**/manage**', { timeout: 20000 });
-  await page.waitForLoadState('networkidle');
-
-  // Phone step is required on /manage after first registration
-  console.log(`[REG] Current URL: ${page.url()}`);
-
-  // Check if phone form is shown (first time registration)
-  const phoneSubmitButton = page.locator('[data-testid="phone-form-button-submit"]');
-  const hasPhoneForm = await phoneSubmitButton.isVisible({ timeout: 5000 }).catch(() => false);
-
-  if (hasPhoneForm) {
-    console.log('[REG] Phone form detected, filling phone number');
-    await page.locator('input[type="tel"]').fill('5551234567');
-    await phoneSubmitButton.click();
-    // Wait for page to reload after phone submit
-    await page.waitForLoadState('networkidle');
-    console.log('[REG] Phone submitted, waiting for workspace form');
-  }
-
-  // Now wait for CreateWorkspaceCard form
-  const createWorkspaceForm = page.locator('[data-testid="create-workspace-name"]');
-  await createWorkspaceForm.waitFor({ state: 'visible', timeout: 30000 });
-
-  await createWorkspaceForm.fill(`${WORKSPACE_ID} Workspace`);
-  await page.waitForTimeout(500);
-
-  await page.locator('input#wsid').clear();
-  await page.locator('input#wsid').fill(WORKSPACE_ID);
-  await page.locator('input#email').clear();
-  await page.locator('input#email').fill(OWNER.email);
-  await page.fill('input#password', OWNER.password);
-  await page.click('button[type="submit"]');
-
-  // Enter workspace
-  await page.waitForSelector('text=Enter', { timeout: 15000 });
-  await page.click('button:has-text("Enter")');
-  await page.waitForURL('**/ws**', { timeout: 15000 });
+  // After registration, redirects directly to /ws/{wsid}
+  await page.waitForURL('**/ws**', { timeout: 30000 });
 
   await page.context().storageState({ path: path.join(AUTH_DIR, 'owner.json') });
   console.log('✅ Owner зарегистрирован, workspace создан');
@@ -168,12 +165,23 @@ async function registerOwner(page: Page) {
 
 async function loginOwner(page: Page) {
   await page.goto('/account/login');
-  await page.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
+  await page.waitForLoadState('domcontentloaded');
 
-  await page.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
-  await page.fill('[data-testid="login-input-email"]', OWNER.email);
-  await page.fill('[data-testid="login-input-password"]', OWNER.password);
-  await page.click('[data-testid="login-button-submit"]');
+  // Select employee tab if present (owner logs in as employee with workspace ID)
+  const employeeTab = page.getByRole('tab', { name: /employee/i });
+  if (await employeeTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await employeeTab.click();
+    await page.waitForTimeout(300);
+  }
+
+  // Fill login form
+  const wsidInput = page.getByTestId('login-input-wsid');
+  if (await wsidInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await wsidInput.fill(WORKSPACE_ID);
+  }
+  await page.getByTestId('login-input-email').fill(OWNER.email);
+  await page.getByTestId('login-input-password').fill(OWNER.password);
+  await page.getByTestId('login-button-submit').click();
 
   await page.waitForURL(/\/ws/, { timeout: 20000 });
   await page.context().storageState({ path: path.join(AUTH_DIR, 'owner.json') });
@@ -320,10 +328,23 @@ test.describe.serial('Company Owner', () => {
     test.skip(!forceSetup, 'SKIP: пароль workspace мог быть изменён (запустите с FORCE_SETUP=true)');
 
     await page.goto('/account/login');
-    await page.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
-    await page.fill('[data-testid="login-input-email"]', OWNER.email);
-    await page.fill('[data-testid="login-input-password"]', OWNER.password);
-    await page.click('[data-testid="login-button-submit"]');
+    await page.waitForLoadState('domcontentloaded');
+
+    // Select employee tab if present
+    const employeeTab = page.getByRole('tab', { name: /employee/i });
+    if (await employeeTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await employeeTab.click();
+      await page.waitForTimeout(300);
+    }
+
+    // Fill login form
+    const wsidInput = page.getByTestId('login-input-wsid');
+    if (await wsidInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await wsidInput.fill(WORKSPACE_ID);
+    }
+    await page.getByTestId('login-input-email').fill(OWNER.email);
+    await page.getByTestId('login-input-password').fill(OWNER.password);
+    await page.getByTestId('login-button-submit').click();
 
     await page.waitForURL(/\/ws/, { timeout: 20000 });
     expect(page.url()).toContain('/ws');
@@ -334,24 +355,12 @@ test.describe.serial('Company Owner', () => {
   });
 
   test('CO1: Owner может войти через admin-login', async ({ page }) => {
-    await page.goto('/account/admin-login');
-    await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
-
-    await page.fill('[data-testid="login-input-email"]', OWNER.email);
-    await page.fill('[data-testid="login-input-password"]', OWNER.password);
-    await page.click('button[type="submit"]');
-
-    await page.waitForURL(/\/manage/, { timeout: 20000 });
+    await adminLoginAndGoToManage(page);
     expect(page.url()).toContain('/manage');
   });
 
   test('CO2: Owner видит свой workspace в manage', async ({ page }) => {
-    await page.goto('/account/admin-login');
-    await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
-    await page.fill('[data-testid="login-input-email"]', OWNER.email);
-    await page.fill('[data-testid="login-input-password"]', OWNER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/manage/, { timeout: 20000 });
+    await adminLoginAndGoToManage(page);
 
     await page.goto('/manage/workspaces');
     await page.waitForLoadState('networkidle');
@@ -364,12 +373,12 @@ test.describe.serial('Company Owner', () => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
 
-    // Login
+    // Login via admin-login
     await page.goto('/account/admin-login');
-    await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
-    await page.fill('[data-testid="login-input-email"]', OWNER.email);
-    await page.fill('[data-testid="login-input-password"]', OWNER.password);
-    await page.click('button[type="submit"]');
+    await page.waitForLoadState('domcontentloaded');
+    await page.getByPlaceholder(/email/i).fill(OWNER.email);
+    await page.getByPlaceholder(/password/i).fill(OWNER.password);
+    await page.getByRole('button', { name: /sign in|log in|login/i }).click();
     await page.waitForURL(/\/manage/, { timeout: 20000 });
 
     // Generate new password
@@ -396,10 +405,23 @@ test.describe.serial('Company Owner', () => {
     const loginPage = await loginCtx.newPage();
 
     await loginPage.goto('/account/login');
-    await loginPage.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
-    await loginPage.fill('[data-testid="login-input-email"]', OWNER.email);
-    await loginPage.fill('[data-testid="login-input-password"]', newPassword);
-    await loginPage.click('[data-testid="login-button-submit"]');
+    await loginPage.waitForLoadState('domcontentloaded');
+
+    // Select employee tab if present
+    const employeeTab = loginPage.getByRole('tab', { name: /employee/i });
+    if (await employeeTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await employeeTab.click();
+      await loginPage.waitForTimeout(300);
+    }
+
+    // Fill login form
+    const wsidInput = loginPage.getByTestId('login-input-wsid');
+    if (await wsidInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await wsidInput.fill(WORKSPACE_ID);
+    }
+    await loginPage.getByTestId('login-input-email').fill(OWNER.email);
+    await loginPage.getByTestId('login-input-password').fill(newPassword);
+    await loginPage.getByTestId('login-button-submit').click();
 
     await loginPage.waitForURL(/\/ws/, { timeout: 20000 });
     await loginCtx.storageState({ path: path.join(AUTH_DIR, 'owner.json') });
@@ -409,12 +431,7 @@ test.describe.serial('Company Owner', () => {
   });
 
   test('CO4: Owner может войти в workspace из manage', async ({ page }) => {
-    await page.goto('/account/admin-login');
-    await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
-    await page.fill('[data-testid="login-input-email"]', OWNER.email);
-    await page.fill('[data-testid="login-input-password"]', OWNER.password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL(/\/manage/, { timeout: 20000 });
+    await adminLoginAndGoToManage(page);
 
     await page.goto('/manage/workspaces');
     await page.waitForLoadState('networkidle');

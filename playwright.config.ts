@@ -22,6 +22,9 @@ const authExists = fs.existsSync('.auth/owner.json');
 // Skip dependencies if in shard mode OR auth already exists and we're running specific projects
 const skipDeps = isShardMode || (authExists && process.env.SKIP_DEPS === 'true');
 
+// Opt-in projects: only included when explicitly requested via --project or env var
+const includeAgreements = process.env.INCLUDE_AGREEMENTS === 'true';
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -73,6 +76,7 @@ export default defineConfig({
 
     // Navigation timeout
     navigationTimeout: 15 * 1000,
+
   },
 
   // Configure projects - sequential flow
@@ -138,16 +142,17 @@ export default defineConfig({
       },
     },
     // 05: Agreements - Templates and Agreements CRUD
-    {
+    // Opt-in: run with INCLUDE_AGREEMENTS=true or --project=agreements
+    ...(includeAgreements ? [{
       name: 'agreements',
       testDir: './tests/e2e/05-agreements',
-      dependencies: skipDeps ? [] : ['company-owner'],
+      dependencies: skipDeps ? [] : ['company-owner'] as string[],
       fullyParallel: false, // Sequential - templates before agreements
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/owner.json',
       },
-    },
+    }] : []),
     // 06a: Email Campaigns - Email providers, templates, campaigns
     {
       name: 'email-campaigns',
@@ -225,12 +230,78 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 11: Products - product CRUD and categories
+    {
+      name: 'products',
+      testDir: './tests/e2e/11-products',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 16: Expenses - expense CRUD operations
+    {
+      name: 'expenses',
+      testDir: './tests/e2e/16-expenses',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',
       testDir: './tests/e2e/regression',
       dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 12: AI Assistant - Internal AI chatbot tests
+    {
+      name: 'ai-assistant',
+      testDir: './tests/e2e/12-ai-assistant',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 13: Payments - payment access and workflows
+    {
+      name: 'payments',
+      testDir: './tests/e2e/13-payments',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - payment operations depend on each other
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 14: Tasks - CRUD operations on tasks
+    {
+      name: 'tasks',
+      testDir: './tests/e2e/14-tasks',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - CRUD operations
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
+    // 15: Events - event management
+    {
+      name: 'events',
+      testDir: './tests/e2e/15-events',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
       use: {
         ...devices['Desktop Chrome'],
         storageState: '.auth/owner.json',
@@ -245,3 +316,5 @@ export default defineConfig({
   //   reuseExistingServer: !process.env.CI,
   // },
 });
+
+

@@ -24,11 +24,12 @@ test.describe('Security: Legitimate Access Verification', () => {
       const storageState = JSON.parse(fs.readFileSync(authFile, 'utf-8'));
       await page.context().addCookies(storageState.cookies || []);
     } else {
-      // Login manually
+      // Login manually via admin-login
       await page.goto('/account/admin-login');
-      await page.locator('[data-testid="login-input-email"]').fill(SUPER_ADMIN.email);
-      await page.locator('[data-testid="login-input-password"]').fill(SUPER_ADMIN.password);
-      await page.click('button[type="submit"]');
+      await page.waitForLoadState('domcontentloaded');
+      await page.getByPlaceholder(/email/i).fill(SUPER_ADMIN.email);
+      await page.getByPlaceholder(/password/i).fill(SUPER_ADMIN.password);
+      await page.getByRole('button', { name: /sign in|log in|login/i }).click();
       await page.waitForURL(/\/manage/, { timeout: 30000 });
     }
 
@@ -90,9 +91,10 @@ test.describe('Security: Legitimate Access Verification', () => {
     // Always login via admin-login for manage dashboard access
     // (workspace auth state has wsid which prevents manage API from listing workspaces)
     await page.goto('/account/admin-login');
-    await page.locator('[data-testid="login-input-email"]').fill(OWNER.email);
-    await page.locator('[data-testid="login-input-password"]').fill(OWNER.password);
-    await page.click('button[type="submit"]');
+    await page.waitForLoadState('domcontentloaded');
+    await page.getByPlaceholder(/email/i).fill(OWNER.email);
+    await page.getByPlaceholder(/password/i).fill(OWNER.password);
+    await page.getByRole('button', { name: /sign in|log in|login/i }).click();
     await page.waitForURL(/\/manage/, { timeout: 30000 });
 
     // Navigate to manage dashboard

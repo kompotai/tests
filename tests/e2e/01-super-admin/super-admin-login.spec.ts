@@ -27,17 +27,15 @@ test.describe('Super Admin', () => {
     console.log(`[SA1] Password length: ${SUPER_ADMIN.password.length}`);
 
     await page.goto('/account/admin-login');
-    await page.waitForSelector('[data-testid="login-input-email"]', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
 
-    // Fill email and verify
-    const emailInput = page.locator('[data-testid="login-input-email"]');
+    // Fill email
+    const emailInput = page.getByPlaceholder(/email/i);
     await emailInput.fill(SUPER_ADMIN.email);
-    await page.waitForTimeout(100); // Small delay for React state update
 
-    // Fill password and verify
-    const passwordInput = page.locator('[data-testid="login-input-password"]');
+    // Fill password
+    const passwordInput = page.getByPlaceholder(/password/i);
     await passwordInput.fill(SUPER_ADMIN.password);
-    await page.waitForTimeout(100); // Small delay for React state update
 
     // Verify inputs are filled correctly
     const filledEmail = await emailInput.inputValue();
@@ -51,7 +49,7 @@ test.describe('Super Admin', () => {
     }
 
     // Click submit and wait
-    await page.click('button[type="submit"]');
+    await page.getByRole('button', { name: /sign in|log in|login/i }).click();
 
     // Wait for navigation with better error handling
     try {

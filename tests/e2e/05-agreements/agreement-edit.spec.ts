@@ -12,38 +12,44 @@ import { WORKSPACE_ID } from '@fixtures/users';
 import { AgreementsPage } from '@pages/AgreementsPage';
 import { TEST_CONTACTS } from './agreements.fixture';
 import { Page } from '@playwright/test';
+import { getSetupTemplateName } from './agreement-setup.utils';
 
 // Helper to find a template with exactly 2 signer roles
 async function findTemplateWithTwoRoles(page: Page): Promise<string | null> {
   const templateSelect = page.locator('[data-testid="template-select"]');
   const options = await templateSelect.locator('option').allTextContents();
 
-  // Prefer templates that typically have 2 roles (Comprehensive Template, Signatory Test, Signer * Test)
-  // Avoid "Multi Signatory Test" and "Complete Template" which have 3 roles
+  // Build candidates: setup template first, then regex matches
+  const setupName = getSetupTemplateName();
+  const candidates: string[] = [];
+  if (setupName) {
+    const match = options.find(opt => opt === setupName || opt === `${setupName} (Contract)`);
+    if (match) candidates.push(match);
+  }
   const patterns = [/Comprehensive Template \d+/, /Signatory Test \d+/, /Signer.*Test \d+/];
-
   for (const pattern of patterns) {
-    const candidates = options.filter(opt => pattern.test(opt));
-    for (const templateLabel of candidates) {
-      await templateSelect.selectOption({ label: templateLabel });
-      await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
-      await page.waitForTimeout(500);
+    candidates.push(...options.filter(opt => pattern.test(opt) && !candidates.includes(opt)));
+  }
 
-      // Check for exactly 2 signer roles (role 1 and 2 visible, but not role 3)
-      const signerRole1 = page.locator('[data-testid="signer-role-1"]');
-      const signerRole2 = page.locator('[data-testid="signer-role-2"]');
-      const signerRole3 = page.locator('[data-testid="signer-role-3"]');
+  for (const templateLabel of candidates) {
+    await templateSelect.selectOption({ label: templateLabel });
+    await page.locator('text=Template applied').waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForTimeout(500);
 
-      const hasRole1 = await signerRole1.isVisible({ timeout: 2000 }).catch(() => false);
-      const hasRole2 = await signerRole2.isVisible({ timeout: 1000 }).catch(() => false);
-      const hasRole3 = await signerRole3.isVisible({ timeout: 1000 }).catch(() => false);
+    // Check for exactly 2 signer roles (role 1 and 2 visible, but not role 3)
+    const signerRole1 = page.locator('[data-testid="signer-role-1"]');
+    const signerRole2 = page.locator('[data-testid="signer-role-2"]');
+    const signerRole3 = page.locator('[data-testid="signer-role-3"]');
 
-      if (hasRole1 && hasRole2 && !hasRole3) {
-        console.log(`[helper] Found template with 2 roles: ${templateLabel}`);
-        return templateLabel.replace(/\s*\(Contract\)$/, '');
-      }
-      console.log(`[helper] Template ${templateLabel} has roles: 1=${hasRole1}, 2=${hasRole2}, 3=${hasRole3}`);
+    const hasRole1 = await signerRole1.isVisible({ timeout: 2000 }).catch(() => false);
+    const hasRole2 = await signerRole2.isVisible({ timeout: 1000 }).catch(() => false);
+    const hasRole3 = await signerRole3.isVisible({ timeout: 1000 }).catch(() => false);
+
+    if (hasRole1 && hasRole2 && !hasRole3) {
+      console.log(`[helper] Found template with 2 roles: ${templateLabel}`);
+      return templateLabel.replace(/\s*\(Contract\)$/, '');
     }
+    console.log(`[helper] Template ${templateLabel} has roles: 1=${hasRole1}, 2=${hasRole2}, 3=${hasRole3}`);
   }
   return null;
 }
