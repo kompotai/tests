@@ -80,11 +80,23 @@ for (const user of USERS) {
       await freshPage.goto('/account/login', { waitUntil: 'networkidle' });
     }
 
-    await freshPage.waitForSelector('form', { timeout: 10000 });
-    await freshPage.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
-    await freshPage.fill('[data-testid="login-input-email"]', user.email);
-    await freshPage.fill('[data-testid="login-input-password"]', user.password);
-    await freshPage.click('[data-testid="login-button-submit"]');
+    await freshPage.waitForLoadState('domcontentloaded');
+
+    // Select employee tab if present
+    const employeeTab = freshPage.getByRole('tab', { name: /employee/i });
+    if (await employeeTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await employeeTab.click();
+      await freshPage.waitForTimeout(300);
+    }
+
+    // Fill login form
+    const wsidInput = freshPage.getByTestId('login-input-wsid');
+    if (await wsidInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await wsidInput.fill(WORKSPACE_ID);
+    }
+    await freshPage.getByTestId('login-input-email').fill(user.email);
+    await freshPage.getByTestId('login-input-password').fill(user.password);
+    await freshPage.getByTestId('login-button-submit').click();
 
     try {
       await freshPage.waitForFunction(

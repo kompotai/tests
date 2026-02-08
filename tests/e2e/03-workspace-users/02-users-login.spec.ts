@@ -23,9 +23,18 @@ test.describe('Users Login Verification', () => {
     await page.goto(`/ws/${WORKSPACE_ID}/contacts`);
     await page.waitForLoadState('networkidle');
 
-    // Should be in workspace (not redirected to login)
-    expect(page.url()).toContain('/ws');
-    console.log('✅ Owner auth state is valid');
+    const url = page.url();
+
+    // Should NOT be on login page (auth is valid)
+    expect(url).not.toContain('/login');
+
+    // Owner may be redirected to /manage (if logged via admin-login) or /ws
+    if (url.includes('/manage')) {
+      console.log('✅ Owner auth state is valid (redirected to /manage)');
+    } else {
+      expect(url).toContain('/ws');
+      console.log('✅ Owner auth state is valid');
+    }
   });
 
   // Test each user can login with their credentials
@@ -85,7 +94,7 @@ test.describe('Users Login Verification', () => {
     const page = await context.newPage();
 
     await page.goto('/account/login');
-    await page.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
 
     // Use owner credentials from environment variables
     const ownerEmail = process.env.WS_MEGATEST_OWNER_EMAIL || process.env.SUPER_ADMIN_EMAIL;
@@ -98,11 +107,21 @@ test.describe('Users Login Verification', () => {
       return;
     }
 
+    // Select employee tab if present
+    const employeeTab = page.getByRole('tab', { name: /employee/i });
+    if (await employeeTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await employeeTab.click();
+      await page.waitForTimeout(300);
+    }
+
     // Enter values with leading and trailing whitespace
-    await page.fill('[data-testid="login-input-wsid"]', `  ${WORKSPACE_ID}  `);
-    await page.fill('[data-testid="login-input-email"]', `  ${ownerEmail}  `);
-    await page.fill('[data-testid="login-input-password"]', ownerPassword);
-    await page.click('[data-testid="login-button-submit"]');
+    const wsidInput = page.getByTestId('login-input-wsid');
+    if (await wsidInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await wsidInput.fill(`  ${WORKSPACE_ID}  `);
+    }
+    await page.getByTestId('login-input-email').fill(`  ${ownerEmail}  `);
+    await page.getByTestId('login-input-password').fill(ownerPassword);
+    await page.getByTestId('login-button-submit').click();
 
     // Should succeed - whitespace should be trimmed by the form
     try {
@@ -141,12 +160,23 @@ test.describe('Users Login Verification', () => {
     const page = await context.newPage();
 
     await page.goto('/account/login');
-    await page.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
 
-    await page.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
-    await page.fill('[data-testid="login-input-email"]', testUser.email);
-    await page.fill('[data-testid="login-input-password"]', testUser.password);
-    await page.click('[data-testid="login-button-submit"]');
+    // Select employee tab if present
+    const employeeTab = page.getByRole('tab', { name: /employee/i });
+    if (await employeeTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await employeeTab.click();
+      await page.waitForTimeout(300);
+    }
+
+    // Fill login form
+    const wsidInput = page.getByTestId('login-input-wsid');
+    if (await wsidInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await wsidInput.fill(WORKSPACE_ID);
+    }
+    await page.getByTestId('login-input-email').fill(testUser.email);
+    await page.getByTestId('login-input-password').fill(testUser.password);
+    await page.getByTestId('login-button-submit').click();
 
     try {
       await page.waitForURL(/\/ws/, { timeout: 20000 });

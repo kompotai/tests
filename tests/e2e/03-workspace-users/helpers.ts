@@ -82,19 +82,71 @@ export async function createUserViaUI(page: Page, user: User) {
   }
 }
 
+/**
+ * Perform login with user-facing locators
+ * Supports both Employee (with workspace ID) and Owner (without) login forms
+ */
+export async function performLogin(
+  page: Page,
+  options: {
+    workspaceId?: string;
+    email: string;
+    password: string;
+    asEmployee?: boolean;
+  }
+) {
+  const { workspaceId = WORKSPACE_ID, email, password, asEmployee = true } = options;
+
+  await page.goto('/account/login');
+  await page.waitForLoadState('domcontentloaded');
+
+  // Select appropriate tab if tabs are present
+  const employeeTab = page.getByRole('tab', { name: /employee/i });
+  const ownerTab = page.getByRole('tab', { name: /company owner|owner/i });
+
+  if (asEmployee && await employeeTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const isSelected = await employeeTab.getAttribute('aria-selected') === 'true'
+      || await employeeTab.getAttribute('data-state') === 'active';
+    if (!isSelected) {
+      await employeeTab.click();
+      await page.waitForTimeout(300);
+    }
+  } else if (!asEmployee && await ownerTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+    const isSelected = await ownerTab.getAttribute('aria-selected') === 'true'
+      || await ownerTab.getAttribute('data-state') === 'active';
+    if (!isSelected) {
+      await ownerTab.click();
+      await page.waitForTimeout(300);
+    }
+  }
+
+  // Fill workspace ID if field is present (employee login)
+  const workspaceIdInput = page.getByTestId('login-input-wsid');
+  if (await workspaceIdInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await workspaceIdInput.fill(workspaceId);
+  }
+
+  // Fill email and password
+  await page.getByTestId('login-input-email').fill(email);
+  await page.getByTestId('login-input-password').fill(password);
+
+  // Submit
+  await page.getByTestId('login-button-submit').click();
+
+  // Wait for redirect away from login
+  await page.waitForURL(url => !url.pathname.includes('/login'), { timeout: 20000 });
+  await page.waitForLoadState('networkidle');
+}
+
 export async function loginAndSaveState(context: BrowserContext, user: User) {
   const page = await context.newPage();
 
-  await page.goto('/account/login');
-  await page.waitForSelector('form', { timeout: 10000 });
-
-  await page.fill('[data-testid="login-input-wsid"]', WORKSPACE_ID);
-  await page.fill('[data-testid="login-input-email"]', user.email);
-  await page.fill('[data-testid="login-input-password"]', user.password);
-  await page.click('[data-testid="login-button-submit"]');
-
-  await page.waitForFunction(() => !window.location.pathname.includes('/login'), { timeout: 20000 });
-  await page.waitForLoadState('networkidle');
+  await performLogin(page, {
+    workspaceId: WORKSPACE_ID,
+    email: user.email,
+    password: user.password,
+    asEmployee: true,
+  });
 
   // Save auth state
   await context.storageState({ path: path.join(AUTH_DIR, `${user.key}.json`) });
