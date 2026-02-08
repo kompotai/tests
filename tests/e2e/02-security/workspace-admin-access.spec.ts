@@ -23,15 +23,23 @@ test.describe('Security: Workspace Admin Access Control', () => {
 
   test('SEC1: Workspace admin can login successfully', async ({ page, context }) => {
     await page.goto('/account/login');
-    await page.waitForSelector('[data-testid="login-input-wsid"]', { timeout: 15000 });
+    await page.waitForLoadState('domcontentloaded');
+
+    // Select employee tab if present
+    const employeeTab = page.getByRole('tab', { name: /employee/i });
+    if (await employeeTab.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await employeeTab.click();
+      await page.waitForTimeout(300);
+    }
 
     // Fill login form
-    await page.locator('[data-testid="login-input-wsid"]').fill(WORKSPACE_ID);
-    await page.locator('[data-testid="login-input-email"]').fill(ADMIN_USER.email);
-    await page.locator('[data-testid="login-input-password"]').fill(ADMIN_USER.password);
-
-    // Submit
-    await page.click('[data-testid="login-button-submit"]');
+    const wsidInput = page.getByTestId('login-input-wsid');
+    if (await wsidInput.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await wsidInput.fill(WORKSPACE_ID);
+    }
+    await page.getByTestId('login-input-email').fill(ADMIN_USER.email);
+    await page.getByTestId('login-input-password').fill(ADMIN_USER.password);
+    await page.getByTestId('login-button-submit').click();
 
     // Wait for workspace redirect
     await page.waitForURL(new RegExp(`/ws/${WORKSPACE_ID}`), { timeout: 30000 });
