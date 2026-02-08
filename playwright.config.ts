@@ -215,10 +215,10 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
-    // 11: Expenses - expense CRUD operations
+    // 16: Expenses - expense CRUD operations
     {
       name: 'expenses',
-      testDir: './tests/e2e/11-expenses',
+      testDir: './tests/e2e/16-expenses',
       dependencies: skipDeps ? [] : ['company-owner'],
       fullyParallel: false,
       use: {

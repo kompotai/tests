@@ -116,13 +116,16 @@ export class ExpensesPage extends BasePage {
     }
   }
 
-  async submitForm(): Promise<void> {
-    // Dismiss cookie banner if it blocks the submit button (without Escape which closes the form)
+  private async dismissCookieBanner(): Promise<void> {
     const cookieBtn = this.page.locator('[data-testid="cookie-accept-all"]');
     if (await cookieBtn.isVisible({ timeout: 500 }).catch(() => false)) {
       await cookieBtn.click();
       await this.wait(300);
     }
+  }
+
+  async submitForm(): Promise<void> {
+    await this.dismissCookieBanner();
     const submitBtn = this.page.locator(this.s.form.submit);
     await submitBtn.scrollIntoViewIfNeeded();
     await submitBtn.click();
@@ -131,12 +134,7 @@ export class ExpensesPage extends BasePage {
   }
 
   async clickSubmitExpectingError(): Promise<void> {
-    // Dismiss cookie banner if present
-    const cookieBtn = this.page.locator('[data-testid="cookie-accept-all"]');
-    if (await cookieBtn.isVisible({ timeout: 500 }).catch(() => false)) {
-      await cookieBtn.click();
-      await this.wait(300);
-    }
+    await this.dismissCookieBanner();
     await this.page.locator(this.s.form.submit).click();
     await this.wait(500);
   }
@@ -154,11 +152,7 @@ export class ExpensesPage extends BasePage {
   }
 
   async cancelForm(): Promise<void> {
-    const cookieBtn = this.page.locator('[data-testid="cookie-accept-all"]');
-    if (await cookieBtn.isVisible({ timeout: 500 }).catch(() => false)) {
-      await cookieBtn.click();
-      await this.wait(300);
-    }
+    await this.dismissCookieBanner();
     await this.page.locator(this.s.form.cancel).click();
     await this.page.locator(this.s.form.container).waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
     await this.wait(300);
