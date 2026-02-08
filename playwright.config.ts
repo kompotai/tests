@@ -76,6 +76,7 @@ export default defineConfig({
 
     // Navigation timeout
     navigationTimeout: 15 * 1000,
+
   },
 
   // Configure projects - sequential flow
@@ -240,6 +241,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 16: Expenses - expense CRUD operations
+    {
+      name: 'expenses',
+      testDir: './tests/e2e/16-expenses',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',
@@ -304,3 +316,5 @@ export default defineConfig({
   //   reuseExistingServer: !process.env.CI,
   // },
 });
+
+

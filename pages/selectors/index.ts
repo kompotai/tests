@@ -14,6 +14,7 @@ import { ChatSelectors } from './chat.selectors';
 import { AIAssistantSelectors } from './ai-assistant.selectors';
 import { InvoicesSelectors } from './invoices.selectors';
 import { PaymentsSelectors } from './payments.selectors';
+import { ExpensesSelectors } from './expenses.selectors';
 
 export const Selectors = {
   login: LoginSelectors,
@@ -29,6 +30,7 @@ export const Selectors = {
   aiAssistant: AIAssistantSelectors,
   invoices: InvoicesSelectors,
   payments: PaymentsSelectors,
+  expenses: ExpensesSelectors,
 } as const;
 
 // Re-export individual selectors for direct import
@@ -46,4 +48,5 @@ export {
   AIAssistantSelectors,
   InvoicesSelectors,
   PaymentsSelectors,
+  ExpensesSelectors,
 };
