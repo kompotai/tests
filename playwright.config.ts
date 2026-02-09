@@ -252,6 +252,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 17: Refunds - refund CRUD operations
+    {
+      name: 'refunds',
+      testDir: './tests/e2e/17-refunds',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',
