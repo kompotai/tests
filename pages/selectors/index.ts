@@ -15,6 +15,7 @@ import { AIAssistantSelectors } from './ai-assistant.selectors';
 import { InvoicesSelectors } from './invoices.selectors';
 import { PaymentsSelectors } from './payments.selectors';
 import { ExpensesSelectors } from './expenses.selectors';
+import { RefundsSelectors } from './refunds.selectors';
 
 export const Selectors = {
   login: LoginSelectors,
@@ -31,6 +32,7 @@ export const Selectors = {
   invoices: InvoicesSelectors,
   payments: PaymentsSelectors,
   expenses: ExpensesSelectors,
+  refunds: RefundsSelectors,
 } as const;
 
 // Re-export individual selectors for direct import
@@ -49,4 +51,5 @@ export {
   InvoicesSelectors,
   PaymentsSelectors,
   ExpensesSelectors,
+  RefundsSelectors,
 };
