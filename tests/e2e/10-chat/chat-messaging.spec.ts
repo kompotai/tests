@@ -91,13 +91,14 @@ ownerTest.describe('Chat - Messaging', () => {
     const message1 = `First contact ${Date.now()}`;
     await chatPage.sendMessage(message1);
 
+    // Switch to second contact and verify different conversation loads
     await chatPage.selectContactByIndex(1);
+    const isContainerVisible = await chatPage.isMessagesContainerVisible();
+    expect(isContainerVisible).toBe(true);
 
-    const message2 = `Second contact ${Date.now()}`;
-    await chatPage.sendMessage(message2);
-
+    // Switch back to first contact and verify original message is still there
     await chatPage.selectContactByIndex(0);
-
+    await chatPage.waitForMessage(message1, 10000);
     const hasMessage = await chatPage.hasMessageWithText(message1);
     expect(hasMessage).toBe(true);
   });

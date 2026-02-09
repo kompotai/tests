@@ -363,7 +363,7 @@ test.describe.serial('Company Owner', () => {
     await adminLoginAndGoToManage(page);
 
     await page.goto('/manage/workspaces');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const row = page.locator(`[data-testid="manage-workspaces-row-${WORKSPACE_ID}"]`);
     await expect(row).toBeVisible({ timeout: 10000 });
@@ -434,7 +434,7 @@ test.describe.serial('Company Owner', () => {
     await adminLoginAndGoToManage(page);
 
     await page.goto('/manage/workspaces');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     const btn = page.locator(`[data-testid="manage-workspaces-button-enter-${WORKSPACE_ID}"]`);
     await expect(btn).toBeVisible({ timeout: 10000 });
