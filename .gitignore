@@ -12,3 +12,6 @@ package-lock.json
 
 # Agreement test setup data (created by 00-agreement-setup.spec.ts)
 .agreement-setup-data.json
+
+# Claude local settings
+.claude/settings.local.json
