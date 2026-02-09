@@ -84,19 +84,19 @@ export class EventsPage extends BasePage {
   }
 
   get startDateInput(): Locator {
-    return this.page.locator('[data-testid="events-form-input-startDate"]');
+    return this.page.locator('[data-testid="event-form-input-startDate"]');
   }
 
   get endDateInput(): Locator {
-    return this.page.locator('[data-testid="events-form-input-endDate"]');
+    return this.page.locator('[data-testid="event-form-input-endDate"]');
   }
 
   get meetingUrlInput(): Locator {
-    return this.page.locator('[data-testid="events-form-input-meetingUrl"]');
+    return this.page.locator('[data-testid="event-form-input-meetingUrl"]');
   }
 
   get maxAttendeesInput(): Locator {
-    return this.page.locator('[data-testid="events-form-input-maxAttendees"]');
+    return this.page.locator('[data-testid="event-form-input-maxAttendees"]');
   }
 
   get descriptionInput(): Locator {
