@@ -14,8 +14,21 @@ export const TasksSelectors = {
     status: '[data-testid="task-form-select-status"]',
     dueDate: 'button:has-text("Select date"), [data-testid="task-form-input-dueDate"]',
     assignee: '[data-testid="task-form-select-assignee"]',
+    assigneeClear: '[data-testid="task-form-clear-assignee"]',
     submit: '[data-testid="task-form-button-submit"], button:has-text("Create Task"), button:has-text("Save")',
     cancel: '[data-testid="task-form-cancel"]',
+  },
+
+  filter: {
+    button: '[data-testid="tasks-button-filter"]',
+    container: '[data-testid="tasks-filter"]',
+    statusSelect: '[data-testid="tasks-filter-status"]',
+    prioritySelect: '[data-testid="tasks-filter-priority"]',
+    assigneeSelect: '[data-testid="tasks-filter-assignee"]',
+    dueDateFrom: '[data-testid="tasks-filter-dueDate-from"]',
+    dueDateTo: '[data-testid="tasks-filter-dueDate-to"]',
+    clearButton: '[data-testid="tasks-filter-clear"]',
+    applyButton: '[data-testid="tasks-filter-apply"]',
   },
 
   pagination: {

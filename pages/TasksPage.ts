@@ -53,6 +53,23 @@ export class TasksPage extends BasePage {
     }
   }
 
+  async typeInSearch(query: string): Promise<void> {
+    const searchInput = this.page.locator(this.s.searchInput).first();
+    await searchInput.waitFor({ state: 'visible', timeout: 5000 });
+    await searchInput.clear();
+    await searchInput.pressSequentially(query, { delay: 50 });
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+  }
+
+  async clearSearch(): Promise<void> {
+    const searchInput = this.page.locator(this.s.searchInput).first();
+    if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await searchInput.clear();
+      await searchInput.press('Enter');
+      await this.page.waitForLoadState('networkidle').catch(() => {});
+    }
+  }
+
   // ============================================
   // CRUD Operations
   // ============================================
@@ -140,6 +157,20 @@ export class TasksPage extends BasePage {
     await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
     if (await option.isVisible().catch(() => false)) {
       await option.click();
+    }
+  }
+
+  async clearAssignee(): Promise<void> {
+    const clearBtn = this.page.locator(this.s.form.assigneeClear).first();
+    if (await clearBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await clearBtn.click();
+      return;
+    }
+    // Fallback: clear the assignee input field directly
+    const field = this.page.locator(this.s.form.assignee).first();
+    if (await field.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await field.click();
+      await field.clear();
     }
   }
 
@@ -239,6 +270,83 @@ export class TasksPage extends BasePage {
   }
 
   // ============================================
+  // Filters
+  // ============================================
+
+  async isFilterAvailable(): Promise<boolean> {
+    return await this.page.locator(this.s.filter.button).first()
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
+  }
+
+  async openFilters(): Promise<boolean> {
+    const filterBtn = this.page.locator(this.s.filter.button).first();
+    if (!await filterBtn.isVisible({ timeout: 3000 }).catch(() => false)) return false;
+
+    await filterBtn.click();
+    const container = this.page.locator(this.s.filter.container).first();
+    await container.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    return await container.isVisible().catch(() => false);
+  }
+
+  async filterByStatus(status: string): Promise<void> {
+    await this.selectFilterOption(this.s.filter.statusSelect, status);
+    await this.applyFilters();
+  }
+
+  async filterByPriority(priority: string): Promise<void> {
+    await this.selectFilterOption(this.s.filter.prioritySelect, priority);
+    await this.applyFilters();
+  }
+
+  async filterByAssignee(assignee: string): Promise<void> {
+    const field = this.page.locator(this.s.filter.assigneeSelect).first();
+    if (!await field.isVisible({ timeout: 2000 }).catch(() => false)) return;
+
+    await field.click();
+    await field.fill(assignee);
+    const option = this.page.locator(`[role="option"]:has-text("${assignee}")`).first();
+    await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+    if (await option.isVisible().catch(() => false)) {
+      await option.click();
+    }
+    await this.applyFilters();
+  }
+
+  async clearFilters(): Promise<void> {
+    const clearBtn = this.page.locator(this.s.filter.clearButton).first();
+    if (await clearBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await clearBtn.click();
+      await this.page.waitForLoadState('networkidle').catch(() => {});
+    }
+  }
+
+  private async selectFilterOption(selector: string, value: string): Promise<void> {
+    const field = this.page.locator(selector).first();
+    if (!await field.isVisible({ timeout: 2000 }).catch(() => false)) return;
+
+    const tagName = await field.evaluate(el => el.tagName.toLowerCase());
+    if (tagName === 'select') {
+      await field.selectOption({ label: value });
+    } else {
+      await field.click();
+      const option = this.page.locator(`[role="option"]:has-text("${value}")`).first();
+      await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+      if (await option.isVisible().catch(() => false)) {
+        await option.click();
+      }
+    }
+  }
+
+  private async applyFilters(): Promise<void> {
+    const applyBtn = this.page.locator(this.s.filter.applyButton).first();
+    if (await applyBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await applyBtn.click();
+    }
+    await this.page.waitForLoadState('networkidle').catch(() => {});
+  }
+
+  // ============================================
   // Pagination
   // ============================================
 
@@ -274,6 +382,17 @@ export class TasksPage extends BasePage {
     await expect(this.page.locator(this.s.emptyState)).toBeVisible({ timeout: 10000 });
   }
 
+  async shouldSeeNoResults(): Promise<void> {
+    const noResults = this.page.locator(this.s.emptyState).first();
+    const emptyTable = this.page.locator('table tbody tr').first();
+
+    const hasNoResults = await noResults.isVisible({ timeout: 5000 }).catch(() => false);
+    const hasRows = await emptyTable.isVisible({ timeout: 2000 }).catch(() => false);
+
+    // Either "No tasks found" message or table has no rows
+    expect(hasNoResults || !hasRows).toBe(true);
+  }
+
   async shouldSeeTable(): Promise<boolean> {
     return await this.page.locator(this.s.table).first()
       .isVisible({ timeout: 3000 })
@@ -284,6 +403,16 @@ export class TasksPage extends BasePage {
     return await this.page.locator(this.s.form.container).first()
       .isVisible({ timeout: 3000 })
       .catch(() => false);
+  }
+
+  async shouldRowContain(identifier: string, values: { status?: string; priority?: string; assignee?: string }): Promise<void> {
+    const row = this.getRow(identifier);
+    await row.waitFor({ state: 'visible', timeout: 10000 });
+    for (const value of Object.values(values)) {
+      if (value) {
+        await expect(row.getByText(value, { exact: false }).first()).toBeVisible({ timeout: 5000 });
+      }
+    }
   }
 
   async shouldSeeValidationError(message?: string): Promise<void> {
