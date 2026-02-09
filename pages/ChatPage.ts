@@ -31,6 +31,9 @@ export class ChatPage extends BasePage {
     await super.waitForPageLoad();
     await this.page.locator(this.selectors.contactsList)
       .waitFor({ state: 'visible', timeout: 10000 });
+    // Wait for any toast/notification overlay to disappear
+    await this.page.locator('.fixed.bottom-2, .fixed.bottom-4').first()
+      .waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
   }
 
   // ============================================
@@ -118,7 +121,10 @@ export class ChatPage extends BasePage {
   // ============================================
 
   async typeMessage(text: string): Promise<void> {
-    await this.page.locator(this.selectors.messageInput).fill(text);
+    const input = this.page.locator(this.selectors.messageInput);
+    await input.click();
+    // Use pressSequentially to trigger React onChange (fill() doesn't always work)
+    await input.pressSequentially(text, { delay: 20 });
   }
 
   async clearMessageInput(): Promise<void> {
@@ -147,6 +153,10 @@ export class ChatPage extends BasePage {
   }
 
   async clickSend(): Promise<void> {
+    // Dismiss any overlay (cookie banner, toast) that might block the button
+    await this.dismissOverlays();
+    // Wait for Send button to become enabled
+    await expect(this.page.locator(this.selectors.sendButton)).toBeEnabled({ timeout: 5000 });
     await this.page.locator(this.selectors.sendButton).click();
     // Wait for input to clear (confirms message was sent)
     await expect(this.page.locator(this.selectors.messageInput)).toHaveValue('', { timeout: 5000 });
