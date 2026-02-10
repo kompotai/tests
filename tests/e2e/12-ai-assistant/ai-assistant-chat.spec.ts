@@ -1,7 +1,7 @@
 /**
  * AI Assistant - Chat Tests
  *
- * Тесты для Internal AI Assistant (чат-бот для сотрудников)
+ * Тесты для Internal AI Assistant (dedicated page)
  */
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
@@ -13,126 +13,90 @@ ownerTest.describe('AI Assistant Chat', () => {
 
   ownerTest.beforeEach(async ({ page }) => {
     aiAssistant = new AIAssistantPage(page);
-    // Переходим в workspace (не на /manage!)
-    await page.goto(`/ws/${WORKSPACE_ID}`);
-    await page.waitForLoadState('networkidle');
-
-    // Закрываем cookie consent если есть
-    const acceptButton = page.locator('button:has-text("Accept All")');
-    if (await acceptButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await acceptButton.click();
-      await page.waitForTimeout(300);
-    }
+    await aiAssistant.goto();
   });
 
-  ownerTest.describe('Opening and Closing', () => {
-    ownerTest('A1: can open AI Assistant panel', async ({ page }) => {
-      // Проверяем, что панель изначально закрыта
-      await aiAssistant.expectPanelHidden();
+  ownerTest.describe('Page Load', () => {
+    ownerTest('A1: AI Assistant page loads with dialogues sidebar and input field', async ({ page }) => {
+      // Проверяем heading "Dialogues"
+      await expect(page.getByRole('heading', { name: 'Dialogues' })).toBeVisible();
 
-      // Открываем AI Assistant
-      await aiAssistant.open();
+      // Проверяем, что textbox видим
+      await expect(page.getByRole('textbox')).toBeVisible();
 
-      // Проверяем, что панель открылась
-      await aiAssistant.expectPanelVisible();
-
-      // Проверяем, что заголовок "Internal AI Assistant" виден
-      await expect(page.locator('text="Internal AI Assistant"')).toBeVisible();
+      // Проверяем кнопку "New dialogue" (accessible name, не текст)
+      await expect(page.getByRole('button', { name: 'New dialogue' })).toBeVisible();
     });
 
-    ownerTest('A2: can close AI Assistant panel', async ({ page }) => {
-      // Открываем
-      await aiAssistant.open();
-      await aiAssistant.expectPanelVisible();
+    ownerTest('A2: can navigate away from AI Assistant page', async ({ page }) => {
+      // Переходим на другую страницу
+      await page.goto(`/ws/${WORKSPACE_ID}`, { waitUntil: 'domcontentloaded' });
 
-      // Закрываем
-      await aiAssistant.close();
-
-      // Проверяем, что панель закрылась
-      await aiAssistant.expectPanelHidden();
+      // Проверяем, что мы ушли со страницы AI Assistant
+      expect(page.url()).not.toContain('/ai-assistant');
     });
 
-    ownerTest('A3: panel shows welcome message', async ({ page }) => {
-      await aiAssistant.open();
-
-      // Проверяем, что есть приветственное сообщение от AI (содержит "Hey" + имя пользователя)
-      const welcomeMessage = page.locator('p:has-text("Hey")').first();
-      await expect(welcomeMessage).toBeVisible();
-    });
-
-    ownerTest('A10: can minimize AI Assistant panel', async ({ page }) => {
-      await aiAssistant.open();
-      await aiAssistant.expectPanelVisible();
-
-      // Сворачиваем
-      await aiAssistant.minimize();
-
-      // После сворачивания панель должна быть скрыта или минимизирована
-      // Проверяем что заголовок "Internal AI Assistant" не виден в полном размере
-      await page.waitForTimeout(500);
+    ownerTest('A3: chat area displays content', async ({ page }) => {
+      // Проверяем, что в области чата есть какой-то контент (сообщения или пустое состояние)
+      // Может быть "Type a message to start a dialogue" или загруженная история
+      const chatContent = page.locator('main p').first();
+      await expect(chatContent).toBeVisible({ timeout: 5000 });
     });
   });
 
   ownerTest.describe('Messaging', () => {
     ownerTest('A4: can send message and receive response', async ({ page }) => {
-      await aiAssistant.open();
-
       // Отправляем сообщение
       await aiAssistant.sendMessage('Hello, how are you?');
 
-      // Ждём ответ от AI (должно появиться новое сообщение)
-      // AI обычно отвечает в течение нескольких секунд
-      await page.waitForTimeout(5000);
+      // Ждём ответ от AI — появляется элемент с длинным текстом
+      const aiResponse = page.locator('p').filter({ hasText: /.{10,}/ }).last();
+      await expect(aiResponse).toBeVisible({ timeout: 10000 });
 
-      // Проверяем, что появилось больше одного сообщения (приветствие + наше + ответ)
+      // Проверяем, что появилось больше одного сообщения
       const messages = page.locator('p').filter({ hasText: /.{10,}/ });
       const count = await messages.count();
       expect(count).toBeGreaterThanOrEqual(2);
     });
 
-    ownerTest('A6: chat history is preserved after reopen', async ({ page }) => {
-      await aiAssistant.open();
-
+    ownerTest('A6: chat history is preserved after page reload', async ({ page }) => {
       // Отправляем уникальное сообщение
       const uniqueMessage = `Test message ${Date.now()}`;
       await aiAssistant.sendMessage(uniqueMessage);
-      await page.waitForTimeout(3000);
 
-      // Закрываем панель
-      await aiAssistant.close();
-      await page.waitForTimeout(500);
+      // Ждём пока сообщение появится на странице
+      await expect(page.locator(`text="${uniqueMessage}"`)).toBeVisible({ timeout: 5000 });
 
-      // Открываем снова
-      await aiAssistant.open();
+      // Перезагружаем страницу
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.getByRole('heading', { name: 'Dialogues' }).waitFor({ state: 'visible', timeout: 10000 });
 
-      // Проверяем, что наше сообщение сохранилось
+      // Проверяем, что сообщение сохранилось
       const savedMessage = page.locator(`text="${uniqueMessage}"`);
-      await expect(savedMessage).toBeVisible({ timeout: 5000 });
+      await expect(savedMessage).toBeVisible({ timeout: 10000 });
     });
 
     ownerTest('A8: AI understands Russian language', async ({ page }) => {
-      await aiAssistant.open();
-
       // Отправляем сообщение на русском
       await aiAssistant.sendMessage('Привет! Как дела?');
 
-      // Ждём ответ
-      await page.waitForTimeout(5000);
+      // Ждём ответ от AI
+      const aiResponse = page.locator('p').filter({ hasText: /.{5,}/ }).last();
+      await expect(aiResponse).toBeVisible({ timeout: 10000 });
 
-      // Проверяем, что AI ответил (появилось новое сообщение)
+      // Проверяем, что AI ответил
       const messages = page.locator('p').filter({ hasText: /.{5,}/ });
       const count = await messages.count();
       expect(count).toBeGreaterThanOrEqual(2);
     });
 
     ownerTest('A9: AI understands English language', async ({ page }) => {
-      await aiAssistant.open();
-
       // Отправляем сообщение на английском
       await aiAssistant.sendMessage('What can you help me with?');
 
-      // Ждём ответ
-      await page.waitForTimeout(5000);
+      // Ждём ответ от AI
+      const aiResponse = page.locator('p').filter({ hasText: /.{5,}/ }).last();
+      await expect(aiResponse).toBeVisible({ timeout: 10000 });
 
       // Проверяем, что AI ответил
       const messages = page.locator('p').filter({ hasText: /.{5,}/ });
