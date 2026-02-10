@@ -22,6 +22,21 @@ import { OWNER, USERS } from '@fixtures/users';
 const generateTaskName = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}`;
 
+// HTTP Basic Auth for stage environment
+const isStage = process.env.BASE_URL?.includes('stage.kompot.ai');
+const stageHttpCredentials = isStage ? {
+  username: process.env.STAGE_HTTP_USER || 'kompot',
+  password: process.env.STAGE_HTTP_PASSWORD || 'stage2025!',
+} : undefined;
+
+/** Create a browser context with owner auth + stage HTTP credentials */
+async function ownerContext(browser: any) {
+  return browser.newContext({
+    storageState: '.auth/owner.json',
+    ...(stageHttpCredentials && { httpCredentials: stageHttpCredentials }),
+  });
+}
+
 // ============================================
 // T1: View Tasks List
 // ============================================
@@ -192,7 +207,7 @@ ownerTest.describe('T3: Edit Task', () => {
 
   ownerTest.beforeAll(async ({ browser }) => {
     // Create a task specifically for edit tests
-    const context = await browser.newContext({ storageState: '.auth/owner.json' });
+    const context = await ownerContext(browser);
     const page = await context.newPage();
     const setupTasksPage = new TasksPage(page);
 
@@ -285,7 +300,7 @@ ownerTest.describe('T4: Delete Task', () => {
 
   ownerTest.beforeAll(async ({ browser }) => {
     // Create a task specifically for deletion tests
-    const context = await browser.newContext({ storageState: '.auth/owner.json' });
+    const context = await ownerContext(browser);
     const page = await context.newPage();
     const setupTasksPage = new TasksPage(page);
 
@@ -369,7 +384,7 @@ ownerTest.describe('T5: Change Task Status', () => {
   let taskDone: string;
 
   ownerTest.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext({ storageState: '.auth/owner.json' });
+    const context = await ownerContext(browser);
     const page = await context.newPage();
     const setup = new TasksPage(page);
 
@@ -467,35 +482,34 @@ ownerTest.describe('T6: Filter Tasks', () => {
 
   let tasksPage: TasksPage;
   const prefix = `Flt-${Date.now().toString(36)}`;
-  let taskHighToDo: string;
-  let taskLowInProgress: string;
-  let taskMediumDone: string;
-  let taskHighInProgress: string;
+  const taskHighToDo = `${prefix}-HighToDo`;
+  const taskLowInProgress = `${prefix}-LowInProg`;
+  const taskMediumDone = `${prefix}-MedDone`;
+  const taskHighInProgress = `${prefix}-HighInProg`;
 
-  ownerTest.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext({ storageState: '.auth/owner.json' });
-    const page = await context.newPage();
-    const setup = new TasksPage(page);
-
-    taskHighToDo = `${prefix}-HighToDo`;
-    taskLowInProgress = `${prefix}-LowInProg`;
-    taskMediumDone = `${prefix}-MedDone`;
-    taskHighInProgress = `${prefix}-HighInProg`;
-
-    await setup.goto();
-    await setup.create({ name: taskHighToDo, status: 'To Do', priority: 'High' });
-    await setup.goto();
-    await setup.create({ name: taskLowInProgress, status: 'In Progress', priority: 'Low' });
-    await setup.goto();
-    await setup.create({ name: taskMediumDone, status: 'Done', priority: 'Medium' });
-    await setup.goto();
-    await setup.create({ name: taskHighInProgress, status: 'In Progress', priority: 'High' });
-
-    await context.close();
-  });
+  const filterOwnerName = OWNER.name;
+  const filterAdminUser = USERS.find(u => u.key === 'admin')!;
+  const filterAdminName = filterAdminUser.name;
 
   ownerTest.beforeEach(async ({ page }) => {
     tasksPage = new TasksPage(page);
+  });
+
+  ownerTest('T6-SETUP: Create tasks for filter tests', async () => {
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskHighToDo, status: 'To Do', priority: 'High', assignee: filterOwnerName });
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskLowInProgress, status: 'In Progress', priority: 'Low', assignee: filterAdminName });
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskMediumDone, status: 'Done', priority: 'Medium', assignee: filterOwnerName });
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskHighInProgress, status: 'In Progress', priority: 'High', assignee: filterAdminName });
+
+    // Verify tasks created via search (list may have pagination)
+    await tasksPage.search(taskHighToDo);
+    await tasksPage.shouldSeeTask(taskHighToDo);
+    await tasksPage.search(taskLowInProgress);
+    await tasksPage.shouldSeeTask(taskLowInProgress);
   });
 
   ownerTest('T6-AC1: Filter by status "To Do"', async () => {
@@ -537,7 +551,7 @@ ownerTest.describe('T6: Filter Tasks', () => {
     await tasksPage.shouldNotSeeTask(taskMediumDone);
   });
 
-  ownerTest('T6-AC3: Filter by assignee', async () => {
+  ownerTest('T6-AC3: Filter by assignee (owner)', async () => {
     await tasksPage.goto();
 
     const filtersAvailable = await tasksPage.isFilterAvailable();
@@ -546,17 +560,90 @@ ownerTest.describe('T6: Filter Tasks', () => {
       return;
     }
 
-    // This test depends on tasks having assignees — skip if assignee filter not present
     await tasksPage.openFilters();
+
+    // Check if assignee filter dropdown is available in the filter panel
     const assigneeFilter = tasksPage['page'].locator('[data-testid="tasks-filter-assignee"]').first();
-    const hasAssigneeFilter = await assigneeFilter.isVisible({ timeout: 2000 }).catch(() => false);
+    const hasAssigneeFilter = await assigneeFilter.isVisible({ timeout: 3000 }).catch(() => false);
     if (!hasAssigneeFilter) {
       ownerTest.skip();
       return;
     }
 
-    // Skip — none of the test tasks have assignees set
-    ownerTest.skip();
+    // Filter by owner via the Filters dropdown
+    await tasksPage.filterByAssignee(filterOwnerName);
+
+    // Owner's tasks should be visible
+    await tasksPage.shouldSeeTask(taskHighToDo);
+    await tasksPage.shouldSeeTask(taskMediumDone);
+    // Admin's tasks should NOT be visible
+    await tasksPage.shouldNotSeeTask(taskLowInProgress);
+    await tasksPage.shouldNotSeeTask(taskHighInProgress);
+  });
+
+  ownerTest('T6-AC3b: Filter by assignee (admin)', async () => {
+    await tasksPage.goto();
+
+    const filtersAvailable = await tasksPage.isFilterAvailable();
+    if (!filtersAvailable) {
+      ownerTest.skip();
+      return;
+    }
+
+    await tasksPage.openFilters();
+
+    const assigneeFilter = tasksPage['page'].locator('[data-testid="tasks-filter-assignee"]').first();
+    const hasAssigneeFilter = await assigneeFilter.isVisible({ timeout: 3000 }).catch(() => false);
+    if (!hasAssigneeFilter) {
+      ownerTest.skip();
+      return;
+    }
+
+    // Filter by admin via the Filters dropdown
+    await tasksPage.filterByAssignee(filterAdminName);
+
+    // Admin's tasks should be visible
+    await tasksPage.shouldSeeTask(taskLowInProgress);
+    await tasksPage.shouldSeeTask(taskHighInProgress);
+    // Owner's tasks should NOT be visible
+    await tasksPage.shouldNotSeeTask(taskHighToDo);
+    await tasksPage.shouldNotSeeTask(taskMediumDone);
+  });
+
+  ownerTest('T6-AC3c: Clear assignee filter shows all tasks', async () => {
+    await tasksPage.goto();
+
+    const filtersAvailable = await tasksPage.isFilterAvailable();
+    if (!filtersAvailable) {
+      ownerTest.skip();
+      return;
+    }
+
+    // Apply assignee filter first
+    await tasksPage.openFilters();
+
+    const assigneeFilter = tasksPage['page'].locator('[data-testid="tasks-filter-assignee"]').first();
+    const hasAssigneeFilter = await assigneeFilter.isVisible({ timeout: 3000 }).catch(() => false);
+    if (!hasAssigneeFilter) {
+      ownerTest.skip();
+      return;
+    }
+
+    await tasksPage.filterByAssignee(filterOwnerName);
+
+    // Verify filter is applied — only owner tasks visible
+    await tasksPage.shouldSeeTask(taskHighToDo);
+    await tasksPage.shouldNotSeeTask(taskLowInProgress);
+
+    // Clear filters
+    await tasksPage.openFilters();
+    await tasksPage.clearFilters();
+
+    // All tasks should be visible again
+    await tasksPage.shouldSeeTask(taskHighToDo);
+    await tasksPage.shouldSeeTask(taskLowInProgress);
+    await tasksPage.shouldSeeTask(taskMediumDone);
+    await tasksPage.shouldSeeTask(taskHighInProgress);
   });
 
   ownerTest('T6-AC4: Filter by due date range', async () => {
@@ -645,7 +732,7 @@ ownerTest.describe('T7: Search Tasks', () => {
   let taskGamma: string;
 
   ownerTest.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext({ storageState: '.auth/owner.json' });
+    const context = await ownerContext(browser);
     const page = await context.newPage();
     const setup = new TasksPage(page);
 
@@ -726,7 +813,7 @@ ownerTest.describe('T8: Assign Task', () => {
   const adminName = adminUser.name;
 
   ownerTest.beforeAll(async ({ browser }) => {
-    const context = await browser.newContext({ storageState: '.auth/owner.json' });
+    const context = await ownerContext(browser);
     const page = await context.newPage();
     const setup = new TasksPage(page);
 
