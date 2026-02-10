@@ -97,10 +97,8 @@ export class TasksPage extends BasePage {
     const nameField = this.page.locator(this.s.form.name).first();
     await nameField.waitFor({ state: 'visible', timeout: 5000 });
 
-    // Focus and fill using pressSequentially for better React compatibility
     await nameField.click();
-    await nameField.clear();
-    await nameField.pressSequentially(data.name, { delay: 30 });
+    await nameField.fill(data.name);
 
     if (data.description) {
       const descField = this.page.locator(this.s.form.description).first();
