@@ -559,8 +559,24 @@ ownerTest.describe('T6: Filter Tasks', () => {
     ownerTest.skip();
   });
 
-  ownerTest('T6-AC4: Filter by due date range', async () => {
-    // Due date filter may not be available in the UI
+  ownerTest('T6-AC4: Filter by due date (On Date)', async ({ page }) => {
+    // Create task with today's due date inside the test
+    const taskWithDueToday = `${prefix}-DueToday`;
+    await tasksPage.goto();
+    await tasksPage.openCreateForm();
+    const nameInput = page.locator('input#title').first();
+    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
+    await nameInput.click();
+    await nameInput.clear();
+    await nameInput.pressSequentially(taskWithDueToday, { delay: 30 });
+    // Set due date via date picker
+    const selectDateBtn = page.locator('button:has-text("Select date")').first();
+    await selectDateBtn.click();
+    const today = new Date().getDate().toString();
+    await page.locator(`table button:text-is("${today}")`).first().click();
+    await tasksPage.submitForm();
+
+    // Now filter by due date
     await tasksPage.goto();
 
     const filtersAvailable = await tasksPage.isFilterAvailable();
@@ -570,15 +586,39 @@ ownerTest.describe('T6: Filter Tasks', () => {
     }
 
     await tasksPage.openFilters();
-    const dueDateFrom = tasksPage['page'].locator('[data-testid="tasks-filter-dueDate-from"]').first();
-    const hasDueDateFilter = await dueDateFrom.isVisible({ timeout: 2000 }).catch(() => false);
+
+    // Look for due date filter dropdown
+    const dueDateFilter = page.locator('[data-testid="tasks-filter-dueDate"]').first();
+    const hasDueDateFilter = await dueDateFilter.isVisible({ timeout: 2000 }).catch(() => false);
     if (!hasDueDateFilter) {
       ownerTest.skip();
       return;
     }
 
-    // Skip — none of the test tasks have due dates set
-    ownerTest.skip();
+    // Select "On Date" from dropdown
+    await dueDateFilter.click();
+    const onDateOption = page.locator('[role="option"]:has-text("On Date")').first();
+    await onDateOption.waitFor({ state: 'visible', timeout: 3000 });
+    await onDateOption.click();
+
+    // Pick today's date using the date picker
+    const filterDateBtn = page.locator('button:has-text("Select date")').first();
+    if (await filterDateBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await filterDateBtn.click();
+      await page.locator(`table button:text-is("${today}")`).first().click();
+    }
+
+    // Apply filter
+    const applyBtn = page.locator('[data-testid="tasks-filter-apply"]').first();
+    if (await applyBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await applyBtn.click();
+    }
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    // Task with today's due date should be visible
+    await tasksPage.shouldSeeTask(taskWithDueToday);
+    // Tasks without due dates should NOT be visible
+    await tasksPage.shouldNotSeeTask(taskHighToDo);
   });
 
   ownerTest('T6-AC5: Combine status + priority filters', async () => {
