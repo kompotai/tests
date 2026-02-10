@@ -252,6 +252,10 @@ export class OpportunitiesPage extends BasePage {
     await this.clickRowDelete(identifier);
     if (await this.isConfirmDialogVisible()) {
       await this.confirmDialog();
+      // Wait for dialog to close
+      await this.page.locator('[data-testid="confirm-dialog"]').waitFor({ state: 'hidden', timeout: 15000 });
+      // Wait for row to disappear
+      await this.page.locator(this.s.row(identifier)).first().waitFor({ state: 'hidden', timeout: 10000 });
     }
   }
 
