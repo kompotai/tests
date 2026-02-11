@@ -153,8 +153,9 @@ ownerTest.describe('T6-AC2: Filter by Priority', () => {
     await openPriorityDropdown(page);
     await selectPriorityOption(page, 'High');
 
-    // Switch to Low — click the Priority combobox again
-    await openPriorityDropdown(page);
+    // Panel is still open — click Priority select directly (no need to reopen Filters)
+    const allPriorities = page.getByText('High').first();
+    await allPriorities.click({ force: true });
     await selectPriorityOption(page, 'Low');
 
     // List should update

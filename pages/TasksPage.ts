@@ -108,11 +108,12 @@ export class TasksPage extends BasePage {
     }
 
     if (data.priority) {
-      await this.selectOption(this.s.form.priority, data.priority);
+      await this.selectReactSelect(this.s.form.priorityPlaceholder, data.priority);
     }
 
+    // Status only exists in Edit form — skip silently if not found
     if (data.status) {
-      await this.selectOption(this.s.form.status, data.status);
+      await this.selectReactSelect(this.s.form.statusPlaceholder, data.status);
     }
 
     if (data.dueDate) {
@@ -123,52 +124,23 @@ export class TasksPage extends BasePage {
     }
 
     if (data.assignee) {
-      await this.selectAssignee(data.assignee);
+      await this.selectReactSelect(this.s.form.assigneePlaceholder, data.assignee);
     }
   }
 
-  private async selectOption(selector: string, value: string): Promise<void> {
-    const field = this.page.locator(selector).first();
-    if (!await field.isVisible({ timeout: 2000 }).catch(() => false)) return;
+  /**
+   * Click a react-select by its placeholder text and pick an option.
+   * Works for both form selects and filter selects.
+   */
+  private async selectReactSelect(placeholder: string, value: string): Promise<void> {
+    const control = this.page.getByText(placeholder).first();
+    if (!await control.isVisible({ timeout: 2000 }).catch(() => false)) return;
 
-    const tagName = await field.evaluate(el => el.tagName.toLowerCase());
-    if (tagName === 'select') {
-      await field.selectOption({ label: value });
-    } else {
-      await field.click();
-      const option = this.page.locator(`[role="option"]:has-text("${value}")`).first();
-      await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
-      if (await option.isVisible().catch(() => false)) {
-        await option.click();
-      }
-    }
-  }
-
-  private async selectAssignee(assignee: string): Promise<void> {
-    const field = this.page.locator(this.s.form.assignee).first();
-    if (!await field.isVisible({ timeout: 2000 }).catch(() => false)) return;
-
-    await field.click();
-    await field.fill(assignee);
-
-    const option = this.page.locator(Selectors.common.selectOption).first();
+    await control.click({ force: true });
+    const option = this.page.locator('[role="option"]').filter({ hasText: value }).first();
     await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
     if (await option.isVisible().catch(() => false)) {
       await option.click();
-    }
-  }
-
-  async clearAssignee(): Promise<void> {
-    const clearBtn = this.page.locator(this.s.form.assigneeClear).first();
-    if (await clearBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await clearBtn.click();
-      return;
-    }
-    // Fallback: clear the assignee input field directly
-    const field = this.page.locator(this.s.form.assignee).first();
-    if (await field.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await field.click();
-      await field.clear();
     }
   }
 
@@ -179,8 +151,7 @@ export class TasksPage extends BasePage {
       await cookieAcceptBtn.click();
     }
 
-    // Find and click submit button using data-testid
-    const submitBtn = this.page.locator('[data-testid="task-form-button-submit"]').first();
+    const submitBtn = this.page.locator(this.s.form.submit).first();
     await submitBtn.scrollIntoViewIfNeeded();
     await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
     await submitBtn.click({ force: true });
@@ -211,11 +182,11 @@ export class TasksPage extends BasePage {
     }
 
     if (newData.priority) {
-      await this.selectOption(this.s.form.priority, newData.priority);
+      await this.selectReactSelect(this.s.form.priorityPlaceholder, newData.priority);
     }
 
     if (newData.status) {
-      await this.selectOption(this.s.form.status, newData.status);
+      await this.selectReactSelect(this.s.form.statusPlaceholder, newData.status);
     }
 
     if (newData.dueDate) {
@@ -227,7 +198,7 @@ export class TasksPage extends BasePage {
     }
 
     if (newData.assignee) {
-      await this.selectAssignee(newData.assignee);
+      await this.selectReactSelect(this.s.form.assigneePlaceholder, newData.assignee);
     }
 
     await this.submitForm();
@@ -282,33 +253,25 @@ export class TasksPage extends BasePage {
     if (!await filterBtn.isVisible({ timeout: 3000 }).catch(() => false)) return false;
 
     await filterBtn.click();
-    const container = this.page.locator(this.s.filter.container).first();
-    await container.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-    return await container.isVisible().catch(() => false);
+    const heading = this.page.locator(this.s.filter.container).first();
+    await heading.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    return await heading.isVisible().catch(() => false);
   }
 
   async filterByStatus(status: string): Promise<void> {
-    await this.selectFilterOption(this.s.filter.statusSelect, status);
-    await this.applyFilters();
+    await this.selectReactSelectFilter(this.s.filter.statusPlaceholder, status);
   }
 
   async filterByPriority(priority: string): Promise<void> {
-    await this.selectFilterOption(this.s.filter.prioritySelect, priority);
-    await this.applyFilters();
+    await this.selectReactSelectFilter(this.s.filter.priorityPlaceholder, priority);
   }
 
   async filterByAssignee(assignee: string): Promise<void> {
-    const field = this.page.locator(this.s.filter.assigneeSelect).first();
-    if (!await field.isVisible({ timeout: 2000 }).catch(() => false)) return;
+    await this.selectReactSelectFilter(this.s.filter.assigneePlaceholder, assignee);
+  }
 
-    await field.click();
-    await field.fill(assignee);
-    const option = this.page.locator(`[role="option"]:has-text("${assignee}")`).first();
-    await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
-    if (await option.isVisible().catch(() => false)) {
-      await option.click();
-    }
-    await this.applyFilters();
+  async filterByDueDate(option: string): Promise<void> {
+    await this.selectReactSelectFilter(this.s.filter.dueDatePlaceholder, option);
   }
 
   async clearFilters(): Promise<void> {
@@ -319,28 +282,16 @@ export class TasksPage extends BasePage {
     }
   }
 
-  private async selectFilterOption(selector: string, value: string): Promise<void> {
-    const field = this.page.locator(selector).first();
-    if (!await field.isVisible({ timeout: 2000 }).catch(() => false)) return;
+  private async selectReactSelectFilter(placeholder: string, value: string): Promise<void> {
+    // Find the placeholder/current value text and click its react-select control
+    const control = this.page.getByText(placeholder).first();
+    await control.waitFor({ state: 'visible', timeout: 3000 });
+    await control.click({ force: true });
 
-    const tagName = await field.evaluate(el => el.tagName.toLowerCase());
-    if (tagName === 'select') {
-      await field.selectOption({ label: value });
-    } else {
-      await field.click();
-      const option = this.page.locator(`[role="option"]:has-text("${value}")`).first();
-      await option.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
-      if (await option.isVisible().catch(() => false)) {
-        await option.click();
-      }
-    }
-  }
-
-  private async applyFilters(): Promise<void> {
-    const applyBtn = this.page.locator(this.s.filter.applyButton).first();
-    if (await applyBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await applyBtn.click();
-    }
+    // Select the option from the dropdown
+    const option = this.page.locator(`[role="option"]`).filter({ hasText: value }).first();
+    await option.waitFor({ state: 'visible', timeout: 3000 });
+    await option.click();
     await this.page.waitForLoadState('networkidle').catch(() => {});
   }
 
@@ -417,7 +368,7 @@ export class TasksPage extends BasePage {
     if (message) {
       await expect(this.page.getByText(message).first()).toBeVisible({ timeout: 5000 });
     } else {
-      const errorSelector = '[data-testid*="error"], .text-red, [class*="error"]';
+      const errorSelector = '.text-red, [class*="error"]';
       await expect(this.page.locator(errorSelector).first()).toBeVisible({ timeout: 5000 });
     }
   }

@@ -13,7 +13,7 @@
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { TasksPage, TaskData } from '@pages/index';
-import { OWNER, USERS } from '@fixtures/users';
+import { OWNER, USERS, WORKSPACE_ID } from '@fixtures/users';
 
 // ============================================
 // Test Data
@@ -487,25 +487,58 @@ ownerTest.describe('T6: Filter Tasks', () => {
   const taskMediumDone = `${prefix}-MedDone`;
   const taskHighInProgress = `${prefix}-HighInProg`;
 
-  const filterOwnerName = OWNER.name;
-  const filterAdminUser = USERS.find(u => u.key === 'admin')!;
-  const filterAdminName = filterAdminUser.name;
+  // Real UI names — discovered in T6-SETUP from the assignee dropdown
+  let realOwnerName = '';
+  let realAdminName = '';
 
   ownerTest.beforeEach(async ({ page }) => {
     tasksPage = new TasksPage(page);
   });
 
-  ownerTest('T6-SETUP: Create tasks for filter tests', async () => {
+  ownerTest('T6-SETUP: Create tasks for filter tests', async ({ page }) => {
+    // Discover real assignee names from the filter dropdown
     await tasksPage.goto();
-    await tasksPage.create({ name: taskHighToDo, status: 'To Do', priority: 'High', assignee: filterOwnerName });
-    await tasksPage.goto();
-    await tasksPage.create({ name: taskLowInProgress, status: 'In Progress', priority: 'Low', assignee: filterAdminName });
-    await tasksPage.goto();
-    await tasksPage.create({ name: taskMediumDone, status: 'Done', priority: 'Medium', assignee: filterOwnerName });
-    await tasksPage.goto();
-    await tasksPage.create({ name: taskHighInProgress, status: 'In Progress', priority: 'High', assignee: filterAdminName });
+    await tasksPage.openFilters();
+    const assigneePlaceholder = page.getByText('All assignees').first();
+    await assigneePlaceholder.click({ force: true });
+    const options = page.locator('[role="option"]');
+    await options.first().waitFor({ state: 'visible', timeout: 3000 });
+    const allNames = await options.allTextContents();
+    // Owner is the name that does NOT start with WORKSPACE_ID prefix (e.g. "test-LubaS")
+    // Admin contains "Admin" in its name (e.g. "testlubas Admin")
+    const wsPrefix = WORKSPACE_ID.toLowerCase();
+    realOwnerName = allNames.find(n => n !== 'All assignees' && !n.toLowerCase().startsWith(wsPrefix)) || allNames[allNames.length - 1];
+    realAdminName = allNames.find(n => n.toLowerCase().includes('admin')) || '';
 
-    // Verify tasks created via search (list may have pagination)
+    // Close filters panel — click the backdrop overlay to dismiss
+    await page.keyboard.press('Escape');
+    const backdrop = page.locator('div.fixed.inset-0.z-10').first();
+    if (await backdrop.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await backdrop.click({ position: { x: 10, y: 10 } });
+    }
+    // Ensure filters panel is gone
+    await page.locator('h3:has-text("Filters")').first().waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+
+    // Step 1: Create all tasks (create form has no status field — all default to "To Do")
+    await tasksPage.create({ name: taskHighToDo, assignee: realOwnerName });
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskLowInProgress, assignee: realAdminName });
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskMediumDone, assignee: realOwnerName });
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskHighInProgress, assignee: realAdminName });
+
+    // Step 2: Edit tasks to set correct status and priority via Edit form
+    await tasksPage.goto();
+    await tasksPage.edit(taskHighToDo, { status: 'To Do', priority: 'High' });
+    await tasksPage.goto();
+    await tasksPage.edit(taskLowInProgress, { status: 'In Progress', priority: 'Low' });
+    await tasksPage.goto();
+    await tasksPage.edit(taskMediumDone, { status: 'Done', priority: 'Medium' });
+    await tasksPage.goto();
+    await tasksPage.edit(taskHighInProgress, { status: 'In Progress', priority: 'High' });
+
+    // Verify tasks created via search
     await tasksPage.search(taskHighToDo);
     await tasksPage.shouldSeeTask(taskHighToDo);
     await tasksPage.search(taskLowInProgress);
@@ -524,9 +557,7 @@ ownerTest.describe('T6: Filter Tasks', () => {
     await tasksPage.openFilters();
     await tasksPage.filterByStatus('To Do');
 
-    // "To Do" task should be visible
     await tasksPage.shouldSeeTask(taskHighToDo);
-    // "In Progress" and "Done" tasks should NOT be visible
     await tasksPage.shouldNotSeeTask(taskLowInProgress);
     await tasksPage.shouldNotSeeTask(taskMediumDone);
   });
@@ -561,17 +592,7 @@ ownerTest.describe('T6: Filter Tasks', () => {
     }
 
     await tasksPage.openFilters();
-
-    // Check if assignee filter dropdown is available in the filter panel
-    const assigneeFilter = tasksPage['page'].locator('[data-testid="tasks-filter-assignee"]').first();
-    const hasAssigneeFilter = await assigneeFilter.isVisible({ timeout: 3000 }).catch(() => false);
-    if (!hasAssigneeFilter) {
-      ownerTest.skip();
-      return;
-    }
-
-    // Filter by owner via the Filters dropdown
-    await tasksPage.filterByAssignee(filterOwnerName);
+    await tasksPage.filterByAssignee(realOwnerName);
 
     // Owner's tasks should be visible
     await tasksPage.shouldSeeTask(taskHighToDo);
@@ -591,16 +612,7 @@ ownerTest.describe('T6: Filter Tasks', () => {
     }
 
     await tasksPage.openFilters();
-
-    const assigneeFilter = tasksPage['page'].locator('[data-testid="tasks-filter-assignee"]').first();
-    const hasAssigneeFilter = await assigneeFilter.isVisible({ timeout: 3000 }).catch(() => false);
-    if (!hasAssigneeFilter) {
-      ownerTest.skip();
-      return;
-    }
-
-    // Filter by admin via the Filters dropdown
-    await tasksPage.filterByAssignee(filterAdminName);
+    await tasksPage.filterByAssignee(realAdminName);
 
     // Admin's tasks should be visible
     await tasksPage.shouldSeeTask(taskLowInProgress);
@@ -619,24 +631,14 @@ ownerTest.describe('T6: Filter Tasks', () => {
       return;
     }
 
-    // Apply assignee filter first
     await tasksPage.openFilters();
-
-    const assigneeFilter = tasksPage['page'].locator('[data-testid="tasks-filter-assignee"]').first();
-    const hasAssigneeFilter = await assigneeFilter.isVisible({ timeout: 3000 }).catch(() => false);
-    if (!hasAssigneeFilter) {
-      ownerTest.skip();
-      return;
-    }
-
-    await tasksPage.filterByAssignee(filterOwnerName);
+    await tasksPage.filterByAssignee(realOwnerName);
 
     // Verify filter is applied — only owner tasks visible
     await tasksPage.shouldSeeTask(taskHighToDo);
     await tasksPage.shouldNotSeeTask(taskLowInProgress);
 
     // Clear filters
-    await tasksPage.openFilters();
     await tasksPage.clearFilters();
 
     // All tasks should be visible again
@@ -654,8 +656,7 @@ ownerTest.describe('T6: Filter Tasks', () => {
     const nameInput = page.locator('input#title').first();
     await nameInput.waitFor({ state: 'visible', timeout: 5000 });
     await nameInput.click();
-    await nameInput.clear();
-    await nameInput.pressSequentially(taskWithDueToday, { delay: 30 });
+    await nameInput.fill(taskWithDueToday);
     // Set due date via date picker
     const selectDateBtn = page.locator('button:has-text("Select date")').first();
     await selectDateBtn.click();
@@ -673,32 +674,13 @@ ownerTest.describe('T6: Filter Tasks', () => {
     }
 
     await tasksPage.openFilters();
+    await tasksPage.filterByDueDate('On Date');
 
-    // Look for due date filter dropdown
-    const dueDateFilter = page.locator('[data-testid="tasks-filter-dueDate"]').first();
-    const hasDueDateFilter = await dueDateFilter.isVisible({ timeout: 2000 }).catch(() => false);
-    if (!hasDueDateFilter) {
-      ownerTest.skip();
-      return;
-    }
-
-    // Select "On Date" from dropdown
-    await dueDateFilter.click();
-    const onDateOption = page.locator('[role="option"]:has-text("On Date")').first();
-    await onDateOption.waitFor({ state: 'visible', timeout: 3000 });
-    await onDateOption.click();
-
-    // Pick today's date using the date picker
+    // Pick today's date using the date picker that appears after selecting "On Date"
     const filterDateBtn = page.locator('button:has-text("Select date")').first();
     if (await filterDateBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await filterDateBtn.click();
       await page.locator(`table button:text-is("${today}")`).first().click();
-    }
-
-    // Apply filter
-    const applyBtn = page.locator('[data-testid="tasks-filter-apply"]').first();
-    if (await applyBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await applyBtn.click();
     }
     await page.waitForLoadState('networkidle').catch(() => {});
 
