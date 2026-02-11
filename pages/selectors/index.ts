@@ -16,6 +16,7 @@ import { InvoicesSelectors } from './invoices.selectors';
 import { PaymentsSelectors } from './payments.selectors';
 import { ExpensesSelectors } from './expenses.selectors';
 import { RefundsSelectors } from './refunds.selectors';
+import { UsersSelectors } from './users.selectors';
 
 export const Selectors = {
   login: LoginSelectors,
@@ -33,6 +34,7 @@ export const Selectors = {
   payments: PaymentsSelectors,
   expenses: ExpensesSelectors,
   refunds: RefundsSelectors,
+  users: UsersSelectors,
 } as const;
 
 // Re-export individual selectors for direct import
@@ -52,4 +54,5 @@ export {
   PaymentsSelectors,
   ExpensesSelectors,
   RefundsSelectors,
+  UsersSelectors,
 };

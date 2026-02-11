@@ -318,6 +318,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 18: Users - user management in settings
+    {
+      name: 'users',
+      testDir: './tests/e2e/18-users',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
