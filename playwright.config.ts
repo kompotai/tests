@@ -318,6 +318,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 19: General Settings - workspace settings
+    {
+      name: 'general-settings',
+      testDir: './tests/e2e/19-general-settings',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
