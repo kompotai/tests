@@ -318,6 +318,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 20: Workflow - module toggles
+    {
+      name: 'workflow',
+      testDir: './tests/e2e/20-workflow',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
