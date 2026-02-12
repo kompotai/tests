@@ -22,7 +22,7 @@ export const OpportunitiesSelectors = {
 
   // Row selectors
   row: (identifier: string) => `tr:has-text("${identifier}")`,
-  rowEditButton: (identifier: string) => `tr:has-text("${identifier}") [data-testid*="edit"], tr:has-text("${identifier}") button:has-text("Edit")`,
+  rowEditButton: (identifier: string) => `tr:has-text("${identifier}") button:has(svg.lucide-pencil), tr:has-text("${identifier}") [data-testid="row-edit-button"], tr:has-text("${identifier}") button[aria-label*="edit" i]`,
   rowDeleteButton: (identifier: string) => `tr:has-text("${identifier}") [data-testid*="delete"], tr:has-text("${identifier}") button:has-text("Delete")`,
   rowAmount: (identifier: string) => `tr:has-text("${identifier}") td[data-column="amount"], tr:has-text("${identifier}") td:nth-child(3)`,
   rowContact: (identifier: string) => `tr:has-text("${identifier}") td[data-column="contact"]`,

@@ -3,8 +3,11 @@ node_modules/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+playwright/.auth/
 /.auth/
+
 .env
+state.json
 .DS_Store
 .idea/
 package-lock.json
@@ -12,3 +15,6 @@ package-lock.json
 
 # Agreement test setup data (created by 00-agreement-setup.spec.ts)
 .agreement-setup-data.json
+
+# Claude local settings
+.claude/settings.local.json
