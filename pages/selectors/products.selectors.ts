@@ -10,7 +10,7 @@ export const ProductsSelectors = {
   // List page
   table: '[data-testid="products-table"]',
   createButton: '[data-testid="products-button-create"]',
-  searchInput: 'input[placeholder="Search by name, SKU, description..."]',
+  searchInput: 'input[placeholder*="Search products" i], [data-testid="products-search"]',
 
   // Category sidebar
   categoryTree: '[data-testid="category-tree"]',
