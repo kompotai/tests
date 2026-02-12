@@ -318,6 +318,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 21: Dictionaries - dictionary CRUD
+    {
+      name: 'dictionaries',
+      testDir: './tests/e2e/21-dictionaries',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
