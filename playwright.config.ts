@@ -318,6 +318,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 22: Webhooks - webhook CRUD
+    {
+      name: 'webhooks',
+      testDir: './tests/e2e/22-webhooks',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
   ],
 
   // Run your local dev server before starting the tests
