@@ -12,7 +12,12 @@ import { MarketingSelectors } from '@pages/selectors/marketing.selectors';
 
 const TEST_HTML = '<h1>Template Test</h1><p>Template body</p>';
 
-ownerTest.describe('Marketing — Email Templates', () => {
+// NOTE: Email Templates feature was removed from the UI on Feb 14, 2026.
+// All template tests are skipped until the feature is re-enabled.
+// The templates page (/marketing/templates) now returns 404.
+// The sidebar link "Email Templates" has been removed.
+// Selectors and Page Object methods are preserved for when the feature returns.
+ownerTest.describe.skip('Marketing — Email Templates [FEATURE REMOVED]', () => {
   let marketing: MarketingPage;
 
   ownerTest.beforeEach(async ({ page }) => {

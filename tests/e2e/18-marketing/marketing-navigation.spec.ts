@@ -28,9 +28,9 @@ ownerTest.describe('Marketing — Navigation', () => {
       await marketing.shouldBeOnCampaignsList();
     });
 
-    ownerTest('shows sidebar with all marketing sections', async ({ page }) => {
+    ownerTest('shows sidebar with marketing sections', async ({ page }) => {
       await expect(page.locator(MarketingSelectors.sidebar.emailCampaigns)).toBeVisible();
-      await expect(page.locator(MarketingSelectors.sidebar.emailTemplates)).toBeVisible();
+      // NOTE: Email Templates removed from sidebar as of Feb 14, 2026
       await expect(page.locator(MarketingSelectors.sidebar.smsCampaigns)).toBeVisible();
       await expect(page.locator(MarketingSelectors.sidebar.voiceCampaigns)).toBeVisible();
     });
@@ -48,7 +48,9 @@ ownerTest.describe('Marketing — Navigation', () => {
   // Sidebar Navigation
   // ============================================
 
-  ownerTest.describe('Sidebar Navigation', () => {
+  // NOTE: Email Templates removed from sidebar as of Feb 14, 2026.
+  // Sidebar navigation tests for Templates are skipped.
+  ownerTest.describe.skip('Sidebar Navigation — Templates [FEATURE REMOVED]', () => {
     ownerTest('navigates to Email Templates', async ({ page }) => {
       await marketing.goToEmailTemplates();
       await marketing.shouldBeOnTemplates();
@@ -74,7 +76,8 @@ ownerTest.describe('Marketing — Navigation', () => {
       await expect(page.locator(MarketingSelectors.campaigns.heading)).toBeVisible();
     });
 
-    ownerTest('templates URL loads correctly', async ({ page }) => {
+    // NOTE: Email Templates page removed as of Feb 14, 2026 (returns 404)
+    ownerTest.skip('templates URL loads correctly [FEATURE REMOVED]', async ({ page }) => {
       await page.goto(`/ws/${WORKSPACE_ID}/marketing/templates`);
       await page.waitForLoadState('domcontentloaded');
       await expect(page.locator(MarketingSelectors.templates.heading)).toBeVisible();
@@ -104,11 +107,11 @@ ownerTest.describe('Marketing — Navigation', () => {
       await expect(page.locator(MarketingSelectors.campaigns.heading)).toBeVisible();
     });
 
-    ownerTest('templates page persists after refresh', async ({ page }) => {
+    // NOTE: Email Templates page removed as of Feb 14, 2026
+    ownerTest.skip('templates page persists after refresh [FEATURE REMOVED]', async ({ page }) => {
       await marketing.goToEmailTemplates();
       await page.reload();
       await page.waitForLoadState('domcontentloaded');
-      // Templates page may load slower — use longer timeout and check URL as fallback
       await marketing.shouldBeOnTemplates();
       await expect(page.locator(MarketingSelectors.templates.createTemplateBtn)).toBeVisible({ timeout: 10000 });
     });
