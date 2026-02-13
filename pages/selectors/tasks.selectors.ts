@@ -1,41 +1,38 @@
 export const TasksSelectors = {
   heading: 'h1:has-text("All Tasks")',
-  table: 'table',
+  table: '[data-testid="tasks-table"]',
   emptyState: 'text="No tasks found"',
-  createButton: 'button:has-text("Create task")',
-  searchInput: 'input[placeholder*="Search by title"]',
+  createButton: '[data-testid="tasks-button-create"]',
+  searchInput: '[data-testid="tasks-search"]',
 
   form: {
-    container: 'h2:has-text("task")',
-    name: 'input#title, input[placeholder*="Call client"]',
-    description: 'textarea[placeholder*="Additional details"]',
+    container: '[data-testid="task-form"]',
+    name: '[data-testid="task-form-input-title"]',
+    description: '[data-testid="task-form-input-description"]',
     dueDate: 'button:has-text("Select date")',
-    // Assignee & Priority are react-selects identified by placeholder text
-    assigneePlaceholder: 'Not assigned',
-    priorityPlaceholder: 'Not specified',
+    assignee: '[data-testid="task-form-select-assignee"]',
+    priority: '[data-testid="task-form-select-priority"]',
     // Status only exists in Edit form (not in Create form)
-    statusPlaceholder: 'To Do',
-    submit: 'button:has-text("Create Task"), button:has-text("Save")',
-    cancel: 'button:has-text("Cancel")',
+    status: '[data-testid="task-form-select-status"]',
+    submit: '[data-testid="task-form-button-submit"]',
+    cancel: '[data-testid="task-form-button-cancel"]',
   },
 
   filter: {
-    button: 'button:has-text("Filters")',
+    button: '[data-testid="tasks-button-filters"]',
     container: 'h3:has-text("Filters")',
-    assigneePlaceholder: 'All assignees',
-    priorityPlaceholder: 'All priorities',
-    statusPlaceholder: 'All statuses',
-    dueDatePlaceholder: 'Any date',
+    assignee: '[data-testid="tasks-filter-select-assignee"]',
+    priority: '[data-testid="tasks-filter-select-priority"]',
+    status: '[data-testid="tasks-filter-select-status"]',
+    dueDate: '[data-testid="tasks-filter-select-dueDate"]',
     clearButton: 'button:has-text("Clear all filters")',
   },
 
   pagination: {
-    container: 'nav[aria-label="pagination"]',
-    nextButton: 'button:has-text("Next")',
-    prevButton: 'button:has-text("Previous")',
+    pageButton: (n: number) => `button:text-is("${n}")`,
   },
 
   row: (identifier: string) => `tr:has-text("${identifier}")`,
-  rowEditButton: 'td:last-child button:first-child',
-  rowDeleteButton: 'td:last-child button:last-child',
+  rowEditButton: 'button[data-testid$="-edit"]',
+  rowDeleteButton: 'button[data-testid$="-delete"]',
 } as const;

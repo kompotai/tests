@@ -29,9 +29,8 @@ export class TasksPage extends BasePage {
 
   async waitForPageLoad(): Promise<void> {
     await super.waitForPageLoad();
-    // Check for "All Tasks" heading or "Create task" button
-    const heading = this.page.locator('h1:has-text("All Tasks"), h1:has-text("Tasks")').first();
-    const createBtn = this.page.locator('button:has-text("Create task")').first();
+    const heading = this.page.locator(this.s.heading).first();
+    const createBtn = this.page.locator(this.s.createButton).first();
     await Promise.race([
       heading.waitFor({ state: 'visible', timeout: 10000 }),
       createBtn.waitFor({ state: 'visible', timeout: 10000 }),
@@ -80,6 +79,11 @@ export class TasksPage extends BasePage {
     // Wait for form to appear
     const formContainer = this.page.locator(this.s.form.container).first();
     await formContainer.waitFor({ state: 'visible', timeout: 5000 });
+    // Wait for async form init (user fetch auto-sets Assignee, triggers re-render)
+    const assigneeSelect = this.page.locator(this.s.form.assignee).first();
+    if (await assigneeSelect.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await expect(assigneeSelect).not.toHaveText('Not assigned', { timeout: 5000 }).catch(() => {});
+    }
   }
 
   async create(data: TaskData): Promise<void> {
@@ -93,27 +97,17 @@ export class TasksPage extends BasePage {
   }
 
   async fillForm(data: TaskData): Promise<void> {
-    // Find name input using the selector from selectors file
-    const nameField = this.page.locator(this.s.form.name).first();
-    await nameField.waitFor({ state: 'visible', timeout: 5000 });
-
-    await nameField.click();
-    await nameField.fill(data.name);
-
-    if (data.description) {
-      const descField = this.page.locator(this.s.form.description).first();
-      if (await descField.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await descField.fill(data.description);
-      }
-    }
-
+    // Fill react-selects FIRST — they can reset the title field
     if (data.priority) {
-      await this.selectReactSelect(this.s.form.priorityPlaceholder, data.priority);
+      await this.selectReactSelect(this.s.form.priority, data.priority);
     }
 
-    // Status only exists in Edit form — skip silently if not found
     if (data.status) {
-      await this.selectReactSelect(this.s.form.statusPlaceholder, data.status);
+      await this.selectReactSelect(this.s.form.status, data.status);
+    }
+
+    if (data.assignee) {
+      await this.selectReactSelect(this.s.form.assignee, data.assignee);
     }
 
     if (data.dueDate) {
@@ -123,17 +117,26 @@ export class TasksPage extends BasePage {
       }
     }
 
-    if (data.assignee) {
-      await this.selectReactSelect(this.s.form.assigneePlaceholder, data.assignee);
+    if (data.description) {
+      const descField = this.page.locator(this.s.form.description).first();
+      if (await descField.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await descField.fill(data.description);
+      }
     }
+
+    // Fill name LAST — react-select interactions can clear it
+    const nameField = this.page.locator(this.s.form.name).first();
+    await nameField.waitFor({ state: 'visible', timeout: 5000 });
+    await nameField.click();
+    await nameField.fill(data.name);
+    await expect(nameField).toHaveValue(data.name);
   }
 
   /**
-   * Click a react-select by its placeholder text and pick an option.
-   * Works for both form selects and filter selects.
+   * Click a react-select by its data-testid selector and pick an option.
    */
-  private async selectReactSelect(placeholder: string, value: string): Promise<void> {
-    const control = this.page.getByText(placeholder).first();
+  private async selectReactSelect(selector: string, value: string): Promise<void> {
+    const control = this.page.locator(selector).first();
     if (!await control.isVisible({ timeout: 2000 }).catch(() => false)) return;
 
     await control.click({ force: true });
@@ -154,11 +157,11 @@ export class TasksPage extends BasePage {
     const submitBtn = this.page.locator(this.s.form.submit).first();
     await submitBtn.scrollIntoViewIfNeeded();
     await submitBtn.waitFor({ state: 'visible', timeout: 5000 });
-    await submitBtn.click({ force: true });
+    await submitBtn.click();
 
     // Wait for form to close (indicates successful submission)
     const formContainer = this.page.locator(this.s.form.container).first();
-    await formContainer.waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {});
+    await formContainer.waitFor({ state: 'hidden', timeout: 10000 });
 
     await this.waitForSpinner();
   }
@@ -182,11 +185,11 @@ export class TasksPage extends BasePage {
     }
 
     if (newData.priority) {
-      await this.selectReactSelect(this.s.form.priorityPlaceholder, newData.priority);
+      await this.selectReactSelect(this.s.form.priority, newData.priority);
     }
 
     if (newData.status) {
-      await this.selectReactSelect(this.s.form.statusPlaceholder, newData.status);
+      await this.selectReactSelect(this.s.form.status, newData.status);
     }
 
     if (newData.dueDate) {
@@ -198,7 +201,7 @@ export class TasksPage extends BasePage {
     }
 
     if (newData.assignee) {
-      await this.selectReactSelect(this.s.form.assigneePlaceholder, newData.assignee);
+      await this.selectReactSelect(this.s.form.assignee, newData.assignee);
     }
 
     await this.submitForm();
@@ -259,19 +262,19 @@ export class TasksPage extends BasePage {
   }
 
   async filterByStatus(status: string): Promise<void> {
-    await this.selectReactSelectFilter(this.s.filter.statusPlaceholder, status);
+    await this.selectReactSelectFilter(this.s.filter.status, status);
   }
 
   async filterByPriority(priority: string): Promise<void> {
-    await this.selectReactSelectFilter(this.s.filter.priorityPlaceholder, priority);
+    await this.selectReactSelectFilter(this.s.filter.priority, priority);
   }
 
   async filterByAssignee(assignee: string): Promise<void> {
-    await this.selectReactSelectFilter(this.s.filter.assigneePlaceholder, assignee);
+    await this.selectReactSelectFilter(this.s.filter.assignee, assignee);
   }
 
   async filterByDueDate(option: string): Promise<void> {
-    await this.selectReactSelectFilter(this.s.filter.dueDatePlaceholder, option);
+    await this.selectReactSelectFilter(this.s.filter.dueDate, option);
   }
 
   async clearFilters(): Promise<void> {
@@ -282,14 +285,12 @@ export class TasksPage extends BasePage {
     }
   }
 
-  private async selectReactSelectFilter(placeholder: string, value: string): Promise<void> {
-    // Find the placeholder/current value text and click its react-select control
-    const control = this.page.getByText(placeholder).first();
+  private async selectReactSelectFilter(selector: string, value: string): Promise<void> {
+    const control = this.page.locator(selector).first();
     await control.waitFor({ state: 'visible', timeout: 3000 });
     await control.click({ force: true });
 
-    // Select the option from the dropdown
-    const option = this.page.locator(`[role="option"]`).filter({ hasText: value }).first();
+    const option = this.page.locator('[role="option"]').filter({ hasText: value }).first();
     await option.waitFor({ state: 'visible', timeout: 3000 });
     await option.click();
     await this.page.waitForLoadState('networkidle').catch(() => {});
@@ -299,20 +300,16 @@ export class TasksPage extends BasePage {
   // Pagination
   // ============================================
 
-  async goToNextPage(): Promise<void> {
-    const nextBtn = this.page.locator(this.s.pagination.nextButton).first();
-    if (await nextBtn.isEnabled({ timeout: 2000 }).catch(() => false)) {
-      await nextBtn.click();
-      await this.waitForSpinner();
-    }
+  async goToPage(n: number): Promise<void> {
+    const btn = this.page.locator(this.s.pagination.pageButton(n)).first();
+    await btn.click();
+    await this.waitForSpinner();
   }
 
-  async goToPrevPage(): Promise<void> {
-    const prevBtn = this.page.locator(this.s.pagination.prevButton).first();
-    if (await prevBtn.isEnabled({ timeout: 2000 }).catch(() => false)) {
-      await prevBtn.click();
-      await this.waitForSpinner();
-    }
+  async isPaginationVisible(): Promise<boolean> {
+    return await this.page.locator(this.s.pagination.pageButton(2)).first()
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
   }
 
   // ============================================
@@ -332,14 +329,8 @@ export class TasksPage extends BasePage {
   }
 
   async shouldSeeNoResults(): Promise<void> {
-    const noResults = this.page.locator(this.s.emptyState).first();
-    const emptyTable = this.page.locator('table tbody tr').first();
-
-    const hasNoResults = await noResults.isVisible({ timeout: 5000 }).catch(() => false);
-    const hasRows = await emptyTable.isVisible({ timeout: 2000 }).catch(() => false);
-
-    // Either "No tasks found" message or table has no rows
-    expect(hasNoResults || !hasRows).toBe(true);
+    await expect(this.page.locator(`${this.s.table} tbody tr`).first())
+      .not.toBeVisible({ timeout: 5000 });
   }
 
   async shouldSeeTable(): Promise<boolean> {
