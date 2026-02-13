@@ -263,6 +263,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 18: Custom Fields - settings CRUD
+    {
+      name: 'custom-fields',
+      testDir: './tests/e2e/18-custom-fields',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',
