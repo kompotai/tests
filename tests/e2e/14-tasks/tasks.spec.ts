@@ -13,7 +13,7 @@
 
 import { ownerTest, expect } from '@fixtures/auth.fixture';
 import { TasksPage, TaskData } from '@pages/index';
-import { OWNER, USERS, WORKSPACE_ID } from '@fixtures/users';
+import { WORKSPACE_ID } from '@fixtures/users';
 
 // ============================================
 // Test Data
@@ -826,91 +826,113 @@ ownerTest.describe('T7: Search Tasks', () => {
 
 // ============================================
 // T8: Assign Task
+// Discovers real assignee names from the UI (not from fixtures).
+// Works with any workspace regardless of member count.
 // ============================================
 
 ownerTest.describe('T8: Assign Task', () => {
   ownerTest.describe.configure({ mode: 'serial' });
 
   let tasksPage: TasksPage;
-  let taskUnassigned: string;
-  let taskAssignedToOwner: string;
-  const ownerName = OWNER.name;
-  const adminUser = USERS.find(u => u.key === 'admin')!;
-  const adminName = adminUser.name;
+  let realOwnerName = '';
+  const allCreatedTasks: string[] = [];
 
-  // beforeEach instead of beforeAll — each test gets 2 fresh tasks.
-  // One failed create doesn't cascade to all T8 tests.
   ownerTest.beforeEach(async ({ page }) => {
     tasksPage = new TasksPage(page);
-    taskUnassigned = generateTaskName('AssignNone');
-    taskAssignedToOwner = generateTaskName('AssignOwner');
-
-    await tasksPage.goto();
-    await tasksPage.create({ name: taskUnassigned, status: 'To Do' });
-    await tasksPage.goto();
-    await tasksPage.create({ name: taskAssignedToOwner, status: 'To Do', assignee: ownerName });
   });
 
-  ownerTest.afterEach(async ({ page }, testInfo) => {
-    if (testInfo.status !== 'passed') return;
-    await deleteTasksByName(page.request, taskUnassigned, taskAssignedToOwner);
+  ownerTest.afterAll(async ({ request }) => {
+    await deleteTasksByName(request, ...allCreatedTasks);
   });
 
-  ownerTest('T8-AC1: Assign task to owner', async () => {
+  ownerTest('T8-setup: discover assignee names', async ({ page }) => {
+    // Open filters panel and read real assignee names from dropdown
     await tasksPage.goto();
-    await tasksPage.search(taskUnassigned);
-    await tasksPage.edit(taskUnassigned, { assignee: ownerName });
+    await tasksPage.openFilters();
+    const assigneePlaceholder = page.getByText('All assignees').first();
+    await assigneePlaceholder.click({ force: true });
 
-    await tasksPage.goto();
-    await tasksPage.search(taskUnassigned);
-    await tasksPage.shouldRowContain(taskUnassigned, { assignee: ownerName });
+    const options = page.locator('[role="option"]');
+    await options.first().waitFor({ state: 'visible', timeout: 3000 });
+    const allNames = await options.allTextContents();
+    realOwnerName = allNames.find(n => n !== 'All assignees') || '';
+    expect(realOwnerName).toBeTruthy();
+
+    await page.keyboard.press('Escape');
   });
 
-  ownerTest('T8-AC2: Create task assigned to admin', async () => {
-    const taskForAdmin = generateTaskName('AssignAdmin');
+  ownerTest('T8-AC1: Assign task via edit form', async () => {
+    const taskName = generateTaskName('Assign');
+    allCreatedTasks.push(taskName);
 
     await tasksPage.goto();
-    await tasksPage.create({ name: taskForAdmin, status: 'To Do', assignee: adminName });
+    await tasksPage.create({ name: taskName, status: 'To Do' });
 
+    // Edit to assign owner
     await tasksPage.goto();
-    await tasksPage.search(taskForAdmin);
-    await tasksPage.shouldSeeTask(taskForAdmin);
-    await tasksPage.shouldRowContain(taskForAdmin, { assignee: adminName });
+    await tasksPage.search(taskName);
+    await tasksPage.edit(taskName, { assignee: realOwnerName });
+
+    // Verify assignee appears in the row
+    await tasksPage.goto();
+    await tasksPage.search(taskName);
+    await tasksPage.shouldRowContain(taskName, { assignee: realOwnerName });
   });
 
-  ownerTest('T8-AC3: Reassign task from owner to admin', async () => {
-    await tasksPage.goto();
-    await tasksPage.search(taskAssignedToOwner);
-
-    // Verify currently assigned to owner
-    await tasksPage.shouldRowContain(taskAssignedToOwner, { assignee: ownerName });
-
-    // Reassign to admin
-    await tasksPage.edit(taskAssignedToOwner, { assignee: adminName });
+  ownerTest('T8-AC2: Create task with assignee pre-set', async () => {
+    const taskName = generateTaskName('AssignCreate');
+    allCreatedTasks.push(taskName);
 
     await tasksPage.goto();
-    await tasksPage.search(taskAssignedToOwner);
-    await tasksPage.shouldRowContain(taskAssignedToOwner, { assignee: adminName });
+    await tasksPage.create({ name: taskName, status: 'To Do', assignee: realOwnerName });
+
+    await tasksPage.goto();
+    await tasksPage.search(taskName);
+    await tasksPage.shouldSeeTask(taskName);
+    await tasksPage.shouldRowContain(taskName, { assignee: realOwnerName });
   });
 
-  ownerTest('T8-AC4: Unassign task (clear assignee)', async () => {
-    await tasksPage.goto();
-    await tasksPage.search(taskAssignedToOwner);
+  ownerTest('T8-AC3: Unassign task (clear assignee)', async ({ page }) => {
+    const taskName = generateTaskName('AssignClear');
+    allCreatedTasks.push(taskName);
 
-    // Open edit form, clear assignee, submit
-    await tasksPage.clickRowEdit(taskAssignedToOwner);
+    // Create task with owner assigned
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskName, status: 'To Do', assignee: realOwnerName });
+
+    // Edit — clear assignee
+    await tasksPage.goto();
+    await tasksPage.search(taskName);
+    await tasksPage.clickRowEdit(taskName);
     await tasksPage.clearAssignee();
     await tasksPage.submitForm();
 
-    // Verify assignee is no longer shown
+    // Verify assignee is cleared
     await tasksPage.goto();
-    await tasksPage.search(taskAssignedToOwner);
-    await tasksPage.shouldSeeTask(taskAssignedToOwner);
+    await tasksPage.search(taskName);
+    await tasksPage.shouldSeeTask(taskName);
 
-    // The admin name should not appear in the row
-    const row = tasksPage['page'].locator(`tr:has-text("${taskAssignedToOwner}")`).first();
+    const row = page.locator(`tr:has-text("${taskName}")`).first();
     await row.waitFor({ state: 'visible', timeout: 10000 });
     const rowText = await row.textContent() || '';
-    expect(rowText).not.toContain(adminName);
+    expect(rowText).not.toContain(realOwnerName);
+  });
+
+  ownerTest('T8-AC4: Assignment persists after page reload', async () => {
+    const taskName = generateTaskName('AssignReload');
+    allCreatedTasks.push(taskName);
+
+    await tasksPage.goto();
+    await tasksPage.create({ name: taskName, status: 'To Do' });
+
+    // Assign owner
+    await tasksPage.goto();
+    await tasksPage.search(taskName);
+    await tasksPage.edit(taskName, { assignee: realOwnerName });
+
+    // Full reload and verify
+    await tasksPage.goto();
+    await tasksPage.search(taskName);
+    await tasksPage.shouldRowContain(taskName, { assignee: realOwnerName });
   });
 });

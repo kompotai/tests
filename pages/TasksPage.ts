@@ -166,6 +166,40 @@ export class TasksPage extends BasePage {
     await this.waitForSpinner();
   }
 
+  async clearReactSelect(selector: string): Promise<void> {
+    const container = this.page.locator(selector).first();
+    if (!await container.isVisible({ timeout: 2000 }).catch(() => false)) return;
+
+    const clearBtn = container.locator('[class*="clear-indicator"]').first();
+    if (await clearBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await clearBtn.click();
+      return;
+    }
+
+    // Fallback: open select + pick placeholder / first empty option
+    await container.click({ force: true });
+    const notAssigned = this.page.locator('[role="option"]').filter({ hasText: /not assigned/i }).first();
+    if (await notAssigned.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await notAssigned.click();
+    } else {
+      await this.page.keyboard.press('Escape');
+    }
+  }
+
+  async clearAssignee(): Promise<void> {
+    await this.clearReactSelect(this.s.form.assignee);
+  }
+
+  async getAssigneeOptions(): Promise<string[]> {
+    const control = this.page.locator(this.s.form.assignee).first();
+    await control.click({ force: true });
+    const options = this.page.locator('[role="option"]');
+    await options.first().waitFor({ state: 'visible', timeout: 3000 });
+    const names = await options.allTextContents();
+    await this.page.keyboard.press('Escape');
+    return names;
+  }
+
   async edit(identifier: string, newData: Partial<TaskData>): Promise<void> {
     await this.clickRowEdit(identifier);
 
