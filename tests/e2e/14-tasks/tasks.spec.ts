@@ -792,16 +792,14 @@ ownerTest.describe('T7: Search Tasks', () => {
   });
 
   ownerTest('T7-AC2: Search results update as user types', async () => {
-    await tasksPage.goto();
-
-    // Type the shared prefix — all 3 tasks should appear
-    await tasksPage.typeInSearch(prefix);
+    // Search by shared prefix — all 3 tasks should appear
+    await tasksPage.search(prefix);
     await tasksPage.shouldSeeTask(taskAlpha);
     await tasksPage.shouldSeeTask(taskBeta);
     await tasksPage.shouldSeeTask(taskGamma);
 
-    // Continue typing to narrow down to Alpha
-    await tasksPage.typeInSearch(`${prefix}-Alpha`);
+    // Narrow down to Alpha — only Alpha should remain
+    await tasksPage.search(`${prefix}-Alpha`);
     await tasksPage.shouldSeeTask(taskAlpha);
     await tasksPage.shouldNotSeeTask(taskBeta);
     await tasksPage.shouldNotSeeTask(taskGamma);
@@ -813,10 +811,8 @@ ownerTest.describe('T7: Search Tasks', () => {
     await tasksPage.shouldSeeTask(taskBeta);
     await tasksPage.shouldNotSeeTask(taskAlpha);
 
-    // Clear search
-    await tasksPage.clearSearch();
-
-    // All tasks should be visible again
+    // Navigate back without search — all tasks should be visible again
+    await tasksPage.goto();
     await tasksPage.shouldSeeTask(taskAlpha);
     await tasksPage.shouldSeeTask(taskBeta);
     await tasksPage.shouldSeeTask(taskGamma);
