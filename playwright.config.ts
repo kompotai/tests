@@ -263,6 +263,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 18: Knowledge Base - article and category management
+    {
+      name: 'knowledge-base',
+      testDir: './tests/e2e/18-knowledge-base',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: true,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // Regression: Bug fixes and regression tests
     {
       name: 'regression',

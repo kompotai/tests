@@ -21,3 +21,5 @@ export { InvoicesPage, type InvoiceData } from './InvoicesPage';
 export { PaymentsPage, type PaymentData } from './PaymentsPage';
 export { EventsPage } from './EventsPage';
 export { DictionaryPage } from './DictionaryPage';
+export { KnowledgeBasePage } from './KnowledgeBasePage';
+
