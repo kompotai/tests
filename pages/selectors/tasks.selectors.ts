@@ -1,31 +1,38 @@
 export const TasksSelectors = {
-  heading: 'h1:has-text("Tasks"), [data-testid="tasks-heading"]',
-  table: '[data-testid="tasks-table"], table',
+  heading: 'h1:has-text("All Tasks")',
+  table: '[data-testid="tasks-table"]',
   emptyState: 'text="No tasks found"',
-  createButton: '[data-testid="tasks-create-button"], button:has-text("Create task")',
-  searchInput: '[data-testid="tasks-search"], input[placeholder*="search" i]',
+  createButton: '[data-testid="tasks-button-create"]',
+  searchInput: '[data-testid="tasks-search"]',
 
   form: {
-    container: '[role="dialog"], [data-testid="task-form"]',
-    heading: 'text="New task"',
-    name: 'input#title, input[placeholder*="Call client"], [data-testid="task-form-input-name"]',
-    description: 'textarea[placeholder*="Additional details"], [data-testid="task-form-input-description"]',
-    priority: '[data-testid="task-form-select-priority"]',
-    status: '[data-testid="task-form-select-status"]',
-    dueDate: 'button:has-text("Select date"), [data-testid="task-form-input-dueDate"]',
+    container: '[data-testid="task-form"]',
+    name: '[data-testid="task-form-input-title"]',
+    description: '[data-testid="task-form-input-description"]',
+    dueDate: 'button:has-text("Select date")',
     assignee: '[data-testid="task-form-select-assignee"]',
-    submit: '[data-testid="task-form-button-submit"], button:has-text("Create Task"), button:has-text("Save")',
-    cancel: '[data-testid="task-form-cancel"]',
+    priority: '[data-testid="task-form-select-priority"]',
+    // Status only exists in Edit form (not in Create form)
+    status: '[data-testid="task-form-select-status"]',
+    submit: '[data-testid="task-form-button-submit"]',
+    cancel: '[data-testid="task-form-button-cancel"]',
+  },
+
+  filter: {
+    button: '[data-testid="tasks-button-filters"]',
+    container: 'h3:has-text("Filters")',
+    assignee: '[data-testid="tasks-filter-select-assignee"]',
+    priority: '[data-testid="tasks-filter-select-priority"]',
+    status: '[data-testid="tasks-filter-select-status"]',
+    dueDate: '[data-testid="tasks-filter-select-dueDate"]',
+    clearButton: 'button:has-text("Clear all filters")',
   },
 
   pagination: {
-    container: '[data-testid="tasks-pagination"], nav[aria-label="pagination"]',
-    nextButton: '[data-testid="tasks-pagination-next"], button:has-text("Next")',
-    prevButton: '[data-testid="tasks-pagination-prev"], button:has-text("Previous")',
+    pageButton: (n: number) => `button:text-is("${n}")`,
   },
 
   row: (identifier: string) => `tr:has-text("${identifier}")`,
-  // Edit and Delete are icon buttons (pencil and trash icons)
-  rowEditButton: 'td:last-child button:first-child, button[title*="Edit"], button:has(svg[class*="pencil"])',
-  rowDeleteButton: 'td:last-child button:last-child, button[title*="Delete"], button:has(svg[class*="trash"])',
+  rowEditButton: 'button[data-testid$="-edit"]',
+  rowDeleteButton: 'button[data-testid$="-delete"]',
 } as const;
