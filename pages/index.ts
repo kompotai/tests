@@ -21,3 +21,4 @@ export { InvoicesPage, type InvoiceData } from './InvoicesPage';
 export { PaymentsPage, type PaymentData } from './PaymentsPage';
 export { EventsPage } from './EventsPage';
 export { DictionaryPage } from './DictionaryPage';
+export { CustomFieldsPage, type CustomFieldData, type EntityType, type FieldType } from './CustomFieldsPage';
