@@ -274,6 +274,17 @@ export default defineConfig({
         storageState: '.auth/owner.json',
       },
     },
+    // 18: Marketing - Email Campaigns and Templates
+    {
+      name: 'marketing',
+      testDir: './tests/e2e/18-marketing',
+      dependencies: skipDeps ? [] : ['company-owner'],
+      fullyParallel: false, // Sequential - create before edit/delete
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: '.auth/owner.json',
+      },
+    },
     // 12: AI Assistant - Internal AI chatbot tests
     {
       name: 'ai-assistant',
